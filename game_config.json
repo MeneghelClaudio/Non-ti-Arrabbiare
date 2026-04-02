@@ -1,0 +1,79 @@
+{
+  "players": [
+    {
+      "name": "Bot 1",
+      "color": "Rosso",
+      "hex": "#ff0000",
+      "bot": true,
+      "level": "Scimmia",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 2",
+      "color": "Arancio",
+      "hex": "#ff9500",
+      "bot": true,
+      "level": "Stratega",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 3",
+      "color": "Giallo",
+      "hex": "#ffff00",
+      "bot": true,
+      "level": "Lepre",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 4",
+      "color": "Verde",
+      "hex": "#00ff00",
+      "bot": true,
+      "level": "Tartaruga",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 5",
+      "color": "Azzurro",
+      "hex": "#00f7ff",
+      "bot": true,
+      "level": "Stratega",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 6",
+      "color": "Blu",
+      "hex": "#4040ff",
+      "bot": true,
+      "level": "Leone",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 7",
+      "color": "Viola",
+      "hex": "#a200ff",
+      "bot": true,
+      "level": "Leone",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 8",
+      "color": "Fucsia",
+      "hex": "#ff00cc",
+      "bot": true,
+      "level": "Leone",
+      "pawns": 4
+    },
+    {
+      "name": "Bot 9",
+      "color": "Marrone",
+      "hex": "#8a5413",
+      "bot": true,
+      "level": "Lepre",
+      "pawns": 4
+    }
+  ],
+  "num_players": 0,
+  "num_bots": 9,
+  "pawns_each": 4
+}
