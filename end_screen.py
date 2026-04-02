@@ -1,10 +1,51 @@
 import tkinter as tk
 from tkinter import messagebox
 import json, os, sys, subprocess
-try:
-    from sound import play_click as _play_click
-except Exception:
-    def _play_click(): pass
+
+def _play_click():
+    try:
+        import pygame
+        if not pygame.get_init():
+            pygame.init()
+        # Gestione del sound manager per evitare errori di riproduzione dei suoni
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base, "assets", "sounds", "click.wav")
+        if os.path.isfile(path):
+            pygame.mixer.Sound(path).play()
+    except Exception:
+        pass
+
+def _play_results():
+    try:
+        import pygame
+        if not pygame.get_init():
+            pygame.init()
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base, "assets", "sounds", "results.wav")
+        if os.path.isfile(path):
+            pygame.mixer.Sound(path).play()
+    except Exception:
+        pass
+
+# ── Click interceptor globale ──────────────────────────────────────────────────
+def _setup_click_interceptor(root):
+    _INTERACTIVE_TYPES = (
+        tk.Button, tk.Checkbutton, tk.Radiobutton,
+        tk.Menubutton, tk.Entry, tk.Scale,
+        tk.Listbox, tk.Spinbox,
+    )
+    def on_click(event):
+        w = event.widget
+        while w is not None and w is not root:
+            if isinstance(w, _INTERACTIVE_TYPES):
+                _play_click()
+                break
+            w = getattr(w, 'master', None)
+    root.bind('<Button-1>', on_click, add='+')
 
 # ── Palette (identica a start_screen) ─────────────────────────────────────────
 BG_ROOT    = "#d0d0d8"
@@ -64,7 +105,7 @@ class EndScreen:
     """
     def __init__(self, root, game_data: dict):
         self.root = root
-        self.root.title("Ludo Board v0.15 — Partita Finita")
+        self.root.title("Non t'Arrabbiare - Schermata Finale")
         self.root.configure(bg=BG_ROOT)
         self.root.resizable(True, True)
         self.root.minsize(460, 360)
@@ -97,6 +138,9 @@ class EndScreen:
         self._build_all()
         self._initial_size()
         self.root.bind("<Configure>", self._on_resize)
+        _play_results()
+
+        _setup_click_interceptor(self.root)
 
     # ── Scroll ────────────────────────────────────────────────────────────────
     def _setup_scroll(self):
@@ -383,7 +427,7 @@ class EndScreen:
     def _mk_btn(self, parent, text, cmd, bg, col, anchor):
         f = tk.Frame(parent, bg=bg)
         f.grid(row=0, column=col, sticky=anchor)
-        def _cmd_with_click(c=cmd): _play_click(); c()
+        def _cmd_with_click(c=cmd): c()
         b = tk.Button(f, text=text, command=_cmd_with_click,
                       bg=bg, fg=TEXT_W,
                       activebackground=darken(bg),

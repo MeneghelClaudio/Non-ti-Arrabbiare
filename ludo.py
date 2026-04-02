@@ -628,6 +628,9 @@ def main():
         timers["total"] += dt
         timers["frame_counter"] += 1
 
+        # Screen shake: angolo random + decadimento esponenziale.
+        # decay = exp(-decay_rate * elapsed_ratio) → parte forte, poi si attenua.
+        # Il prodotto con sin/cos dà oscillazione pseudo-casuale.
         if timers["shaking_time"] > 0:
             angle = math.radians(random.uniform(0, 360))
             decay = math.exp(-SCREEN_SHAKE_DECAY *
@@ -662,18 +665,24 @@ def main():
                 name = player_names.get(current_player.index)
                 dice_display.notify_roll(r)
                 if dice_pending["is_six"]:
-                    msg_bar.push(f"{name} Mossa bonus!")
+                    msg_bar.push(f"{name} - Mossa bonus! (ha fatto 6)")
                 dice_pending["active"] = False
 
         num_players = costanti.NUM_PLAYERS
 
         # ============================================================
         # BOT AI LOGIC
+        # Ogni bot ha un timer che conta da un ritardo configurabile (THINK_DELAY / MOVE_DELAY).
+        # bot_phase_handled impedisce di resettare il timer ogni frame.
+        # Il bot aspetta THINK_DELAY → lancia dado → aspetta MOVE_DELAY → sceglie pedina.
         # ============================================================
         if (current_player.is_bot
                 and not settings_popup.is_open
                 and current_phase in (TurnPhase.WAITING_FOR_ROLL,
                                        TurnPhase.WAITING_FOR_MOVE)):
+            # WAITING_FOR_ROLL: il bot deve lanciare il dado.
+            # Prima volta in questa fase → avvia il timer (BOT_THINK_DELAY).
+            # Frame successivi → decrementa il timer. Quando arriva a 0 → lancia dado.
             if current_phase == TurnPhase.WAITING_FOR_ROLL:
                 if bot_phase_handled != TurnPhase.WAITING_FOR_ROLL:
                     bot_timer = BOT_THINK_DELAY
@@ -684,6 +693,10 @@ def main():
                         bot_phase_handled = None
                         roll_dice()
 
+            # WAITING_FOR_MOVE: il bot deve scegliere una pedina.
+            # Prima volta → avvia il timer (BOT_MOVE_DELAY).
+            # Quando il timer scade → chiede alla AI di scegliere la pedina migliore.
+            # Se non ci sono pedine valide → passa oltre.
             elif current_phase == TurnPhase.WAITING_FOR_MOVE:
                 if bot_phase_handled != TurnPhase.WAITING_FOR_MOVE:
                     bot_timer = BOT_MOVE_DELAY
@@ -700,6 +713,8 @@ def main():
                         else:
                             piece_anim_started = False
                             current_phase = next_phase(current_phase)
+        # Quando il giocatore corrente smette di essere un bot, resetta il flag
+        # per permettere al prossimo bot di avviare il suo timer da zero.
         elif current_phase in (TurnPhase.WAITING_FOR_ROLL,
                                 TurnPhase.WAITING_FOR_MOVE):
             bot_phase_handled = None
@@ -707,33 +722,50 @@ def main():
         # ============================================================
         # GAME PHASES
         # ============================================================
+
+        # GAME_OVER: riproduce suono risultati, esce dal loop.
         if current_phase == TurnPhase.GAME_OVER:
             if sfx and not results_played:
                 sfx.play("results")
                 results_played = True
             running = False
 
+        # DICE_ANIMATION: aggiorna il dado 3D in volo.
+        # Quando finisce: verifica se ci sono mosse valide. Se no → pass;
+        # se 1 sola e giocatore umano → mossa obbligata; altrimenti attende selezione.
         elif current_phase == TurnPhase.DICE_ANIMATION and dice:
             dice.update(dt)
             if dice.is_finished():
                 current_phase = next_phase(current_phase)
+                # Raccoglie tutte le pedine di tutti i giocatori.
                 all_p = [p for pl in players for p in pl]
+                # Filtra quelle che possono essere mosse con il dado corrente.
                 valid = [p for p in all_p if is_pawn_valid(
                     p, players, current_player.index, dice_roll, path_cells, final_paths)]
                 if not valid:
+                    # Nessuna pedina valida → passa il turno.
                     msg_bar.push("Nessuna mossa valida!")
                     if sfx:
                         sfx.play("pass")
                     current_phase = TurnPhase.MESSAGE_DISPLAY
                 elif len(valid) == 1 and not current_player.is_bot:
+                    # Esattamente una pedina selezionabile → esegue automaticamente (mossa obbligata).
                     name = player_names.get(current_player.index)
                     msg_bar.push(f"Mossa obbligata per {name}!")
                     execute_move(valid[0])
                 else:
+                    # Più opzioni: se umano chiede selezione, se bot gestirà la AI nella sua fase.
                     if not current_player.is_bot:
                         msg_bar.push("Seleziona una pedina")
 
+        # PIECE_ANIMATION: aggiorna le animazioni delle pedine passo per passo.
+        # piece_anim_started funge da flag: la prima volta raccoglie i passi rimanenti
+        # di tutte le pedine; poi aggiorna ogni frame fino a completamento.
+        # Quando tutte le animazioni finiscono → controlla vittoria o passa a MESSAGE_DISPLAY.
         elif current_phase == TurnPhase.PIECE_ANIMATION:
+            # Prima volta in questa fase: aggiorna le pedine per raccogliere i passi rimanenti
+            # (execute_move ha già impostato step_left per la pedina scelta).
+            # Se ci sono animazioni in corso o passi da fare → entra nel branch "animating".
             if not piece_anim_started:
                 all_p_anim = [p for pl in players for p in pl]
                 for pawn in all_p_anim:
@@ -744,12 +776,15 @@ def main():
                     pass
                 else:
                     piece_anim_started = True
+            # Branch "animating": aggiorna le pedine ogni frame fino a che tutte completano.
             else:
                 for pl in players:
                     for pawn in pl:
                         pawn.update(dt)
+                # Quando nessuna pedina sta più animando: fine movimento.
                 if not any(pawn.is_animating() for pl in players for pawn in pl):
                     piece_anim_started = False
+                    # Controlla vittoria: tutte le pedine al traguardo.
                     if current_player.check_victory():
                         name = player_names.get(current_player.index)
                         msg_bar.push(f"{name} ha vinto la partita!")
@@ -757,11 +792,15 @@ def main():
                     else:
                         current_phase = TurnPhase.MESSAGE_DISPLAY
 
+        # WAITING_FOR_MOVE (solo umani): evidenzia le pedine selezionabili (triangolo sopra),
+        # rileva hover del mouse, esegue la mossa al click.
         elif current_phase == TurnPhase.WAITING_FOR_MOVE and not current_player.is_bot:
+            # Raccoglie tutte le pedine e marca come indicated quelle selezionabili.
             all_p = [p for pl in players for p in pl]
             for pawn in all_p:
                 pawn.indicated = is_pawn_valid(
                     pawn, players, current_player.index, dice_roll, path_cells, final_paths)
+            # Trova la pedina più vicina al cursore (hover detection).
             mouse = pygame.mouse.get_pos()
             hov = None
             min_dist = cell_size
@@ -771,23 +810,43 @@ def main():
                 if d < min_dist:
                     min_dist = d
                     hov = pawn
+            # Se il cursore è sopra una pedina selezionabile → la ingrandisce.
+            # Click sinistro → esegue la mossa.
             if hov:
                 hov.hovered = True
                 if hov.indicated and pygame.mouse.get_pressed()[0]:
                     execute_move(hov)
 
+        # MESSAGE_DISPLAY: gestisce il cambio turno.
+        # Se la pedina ha mangiato → turno bonus (extra_turn_earned).
+        # Se ha fatto 6 → turno bonus.
+        # Altrimenti → incrementa contatore turni e passa al prossimo giocatore.
         elif current_phase == TurnPhase.MESSAGE_DISPLAY:
+            # Controlla vittoria: tutte le pedine al traguardo.
             if current_player.check_victory():
                 name = player_names.get(current_player.index)
                 msg_bar.push(f"{name} ha vinto la partita!")
                 current_phase = TurnPhase.GAME_OVER
             else:
+                # Salva i due bonus separatamente PRIMA di resettare extra_turn_earned.
+                # Quando fai 6 e mangi, sono DUE turni bonus separati.
+                was_six = (dice_roll == 6)
                 bonus = current_player.extra_turn_earned
-                if dice_roll == 6 or bonus:
-                    if bonus:
-                        msg_bar.push(f"{player_names.get(current_player.index)} ha mangiato - Mossa bonus!")
+
+                if was_six and bonus:
+                    # Due turni bonus: 6 E ha mangiato contemporaneamente → due turni consecutivi.
+                    msg_bar.push(f"{player_names.get(current_player.index)} Due mosse bonus! (6 + ha mangiato)")
+                    current_player.extra_turn_earned = False
+                elif was_six:
+                    # Solo 6 → un turno bonus.
+                    msg_bar.push(f"{player_names.get(current_player.index)} Mossa bonus! (ha fatto 6)")
+                    current_player.extra_turn_earned = False
+                elif bonus:
+                    # Solo ha mangiato → un turno bonus.
+                    msg_bar.push(f"{player_names.get(current_player.index)} Mossa bonus! (ha mangiato)")
                     current_player.extra_turn_earned = False
                 else:
+                    # Turno normale: incrementa contatore e passa al prossimo giocatore.
                     current_player.turns += 1
                     current_player = players[(current_player.index + 1) % num_players]
                     turn_banner.notify_new_turn(current_player.index)

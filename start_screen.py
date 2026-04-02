@@ -1,10 +1,37 @@
 import tkinter as tk
 from tkinter import messagebox
 import random, json, os, sys, subprocess
-try:
-    from sound import play_click as _play_click
-except Exception:
-    def _play_click(): pass
+
+def _play_click():
+    try:
+        import pygame
+        if not pygame.get_init():
+            pygame.init()
+        # Gestione del sound manager per evitare errori di riproduzione dei suoni
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base, "assets", "sounds", "click.wav")
+        if os.path.isfile(path):
+            pygame.mixer.Sound(path).play()
+    except Exception:
+        pass
+
+# ── Click interceptor globale ──────────────────────────────────────────────────
+def _setup_click_interceptor(root):
+    _INTERACTIVE_TYPES = (
+        tk.Button, tk.Checkbutton, tk.Radiobutton,
+        tk.Menubutton, tk.Entry, tk.Scale,
+        tk.Listbox, tk.Spinbox,
+    )
+    def on_click(event):
+        w = event.widget
+        while w is not None and w is not root:
+            if isinstance(w, _INTERACTIVE_TYPES):
+                _play_click()
+                break
+            w = getattr(w, 'master', None)
+    root.bind('<Button-1>', on_click, add='+')
 
 # ── Palette ────────────────────────────────────────────────────────────────────
 BG_ROOT    = "#d0d0d8"
@@ -134,6 +161,7 @@ class ColorMenuButton(tk.Frame):
                 command=lambda n=name: self._select(n))
 
     def _select(self, name):
+        _play_click()
         self.color_var.set(name)
         self.refresh()
 
@@ -151,7 +179,7 @@ class ColorMenuButton(tk.Frame):
 class StartScreen:
     def __init__(self, root):
         self.root = root
-        self.root.title("Ludo Board v0.15")
+        self.root.title("Non t'Arrabbiare - Schermata Iniziale")
         self.root.configure(bg=BG_ROOT)
         self.root.resizable(True, True)
         self.root.minsize(MIN_W, MIN_H)
@@ -159,6 +187,8 @@ class StartScreen:
         self.scale = 1.0
         self._rebuild_pending = False
         self._last_canvas_w   = 0      # anti-flash: traccia ultima larghezza
+
+        _setup_click_interceptor(self.root)
 
         self.num_players = tk.IntVar(value=2)
         self.num_pawns   = tk.IntVar(value=4)
@@ -579,7 +609,7 @@ class StartScreen:
         def mk_btn(parent, text, cmd, bg, col, anchor):
             f = tk.Frame(parent, bg=bg)
             f.grid(row=0, column=col, sticky=anchor)
-            def _cmd_with_click(c=cmd): _play_click(); c()
+            def _cmd_with_click(c=cmd): c()
             b = tk.Button(f, text=text, command=_cmd_with_click,
                           bg=bg, fg=TEXT_W,
                           activebackground=darken(bg),
@@ -640,8 +670,7 @@ class StartScreen:
             var.set(max(lo, var.get() - 1))
 
         for txt, cmd in [("▲", inc), ("▼", dec)]:
-            def _sc(c=cmd): _play_click(); c()
-            tk.Button(bf, text=txt, command=_sc,
+            tk.Button(bf, text=txt, command=cmd,
                       bg=BG_PANEL2, fg=TEXT_Y,
                       relief="flat", font=("Segoe UI", fs(6), "bold"),
                       bd=0, activebackground=BORDER_L,
@@ -771,9 +800,9 @@ class StartScreen:
         n_p   = self.num_players.get()
         n_b   = self.num_bots.get()
         total = n_p + n_b
-        if total == 0:
-            messagebox.showwarning("Nessun giocatore",
-                                   "Aggiungi almeno un giocatore o un bot!")
+        if total < 2:
+            messagebox.showwarning("Giocatori insufficienti",
+                                   "Servono almeno 2 giocatori o bot per iniziare!")
             return
 
         colors = [self.p_color[i].get() for i in range(total)]
