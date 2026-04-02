@@ -5,7 +5,7 @@
       "color": "Rosso",
       "hex": "#ff0000",
       "bot": true,
-      "level": "Scimmia",
+      "level": "Leone",
       "pawns": 4
     },
     {
@@ -21,7 +21,7 @@
       "color": "Giallo",
       "hex": "#ffff00",
       "bot": true,
-      "level": "Lepre",
+      "level": "Tartaruga",
       "pawns": 4
     },
     {
@@ -29,7 +29,7 @@
       "color": "Verde",
       "hex": "#00ff00",
       "bot": true,
-      "level": "Tartaruga",
+      "level": "Stratega",
       "pawns": 4
     },
     {
@@ -45,7 +45,7 @@
       "color": "Blu",
       "hex": "#4040ff",
       "bot": true,
-      "level": "Leone",
+      "level": "Tartaruga",
       "pawns": 4
     },
     {
@@ -53,7 +53,7 @@
       "color": "Viola",
       "hex": "#a200ff",
       "bot": true,
-      "level": "Leone",
+      "level": "Tartaruga",
       "pawns": 4
     },
     {
@@ -61,7 +61,7 @@
       "color": "Fucsia",
       "hex": "#ff00cc",
       "bot": true,
-      "level": "Leone",
+      "level": "Stratega",
       "pawns": 4
     },
     {

@@ -32,11 +32,11 @@ PLAYER_COLORS = {
     "Grigio":  "#616161",
 }
 
-def _darken(h, f=0.7):
+def darken(h, f=0.7):
     r,g,b = int(h[1:3],16),int(h[3:5],16),int(h[5:7],16)
     return f"#{int(r*f):02x}{int(g*f):02x}{int(b*f):02x}"
 
-def _lighten(h, f=1.2):
+def lighten(h, f=1.2):
     r=min(255,int(int(h[1:3],16)*f))
     g=min(255,int(int(h[3:5],16)*f))
     b=min(255,int(int(h[5:7],16)*f))
@@ -386,15 +386,15 @@ class EndScreen:
         def _cmd_with_click(c=cmd): _play_click(); c()
         b = tk.Button(f, text=text, command=_cmd_with_click,
                       bg=bg, fg=TEXT_W,
-                      activebackground=_darken(bg),
+                      activebackground=darken(bg),
                       activeforeground=TEXT_W,
                       font=("Impact", self._fs(11)),
                       relief="flat", bd=0,
                       padx=self._s(16), pady=self._s(7),
                       cursor="hand2")
         b.pack()
-        tk.Frame(f, height=3, bg=_darken(bg)).pack(fill="x")
-        b.bind("<Enter>", lambda e: b.config(bg=_lighten(bg)))
+        tk.Frame(f, height=3, bg=darken(bg)).pack(fill="x")
+        b.bind("<Enter>", lambda e: b.config(bg=lighten(bg)))
         b.bind("<Leave>", lambda e: b.config(bg=bg))
 
     # ── Callbacks ─────────────────────────────────────────────────────────────

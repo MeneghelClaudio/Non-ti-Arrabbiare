@@ -101,10 +101,10 @@ def hsv_to_rgb(h, s, v):
 BG_ENABLE_RIPPLE = True
 BG_ENABLE_PATTERN = True
 
-# Parametri ripple
+# Parametri effetto ripple
 BG_RIPPLE_SPEED = 80
 BG_RIPPLE_INTERVAL = 1
-BG_RIPPLE_ALPHA = 100
+BG_RIPPLE_ALPHA = 150
 BG_RIPPLE_WIDTH = 50
 
 # Parametri pattern esagonale
@@ -144,7 +144,7 @@ def invalidate_board_cache():
     _board_cache["dirty"] = True
 
 
-def _make_bg_base(player_color):
+def make_bg_base(player_color):
     """Calcola il colore base dello sfondo dalla tinta del giocatore."""
     r, g, b = player_color
     return (
@@ -159,7 +159,7 @@ def notify_player_change(new_player):
     state = _bg_state
     if state["last_player"] == new_player:
         return
-    new_color = _make_bg_base(PLAYER_COLORS[new_player])
+    new_color = make_bg_base(PLAYER_COLORS[new_player])
     if state["current_color"] is None:
         state["current_color"] = new_color
         state["from_color"] = new_color
@@ -198,7 +198,7 @@ def update_background(dt, center_radius):
 _hex_cache = {"surface": None, "color": None, "size_key": None}
 
 
-def _draw_hex_pattern(surf, base_color, phase):
+def draw_hex_pattern(surf, base_color, phase):
     """
     Pattern di esagoni. Cachato e ricalcolato solo se cambia colore o dimensione.
     La pulsazione viene applicata all'alpha senza ridisegnare.
@@ -242,7 +242,7 @@ def draw_background(canvas, center_x, center_y, current_player):
     w, h = canvas.get_size()
     notify_player_change(current_player)
 
-    base = _bg_state["current_color"] or _make_bg_base(PLAYER_COLORS[current_player])
+    base = _bg_state["current_color"] or make_bg_base(PLAYER_COLORS[current_player])
     idx = _bg_state["last_player"] if _bg_state["last_player"] >= 0 else current_player
     pure = PLAYER_COLORS[idx]
     cx, cy = int(center_x), int(center_y)
@@ -251,7 +251,7 @@ def draw_background(canvas, center_x, center_y, current_player):
     canvas.fill("#FFFFFF")
 
     if BG_ENABLE_PATTERN:
-        _draw_hex_pattern(canvas, base, 0.0)
+        draw_hex_pattern(canvas, base, 0.0)
 
     # Gradiente radiale: centro saturo puro → bordi pastello
     grad = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -330,7 +330,7 @@ def draw_arm_backgrounds(canvas, cell_size, arm_length, center_x, center_y, cent
 # CELLE - bevel 3D con highlight/shadow
 # =============================================================================
 
-def _draw_cell_bevel(canvas, cx, cy, r, fill_color, border_color=(140, 140, 140), border_w=1):
+def draw_cell_bevel(canvas, cx, cy, r, fill_color, border_color=(140, 140, 140), border_w=1):
     """
     Cella circolare con effetto 3D:
     - Cerchio pieno
@@ -355,7 +355,7 @@ def _draw_cell_bevel(canvas, cx, cy, r, fill_color, border_color=(140, 140, 140)
         pygame.draw.circle(canvas, border_color, (cx, cy), r, border_w)
 
 
-def _draw_star5(canvas, cx, cy, r):
+def draw_star5(canvas, cx, cy, r):
     """Stella dorata a 5 punte."""
     outer = r * 0.78
     inner = r * 0.33
@@ -378,12 +378,12 @@ def draw_cells(canvas, path_cells, final_paths, cell_radius):
         if cell.is_start:
             color = PLAYER_COLORS[start_idx]
             light = adjust_color(color, +55)
-            _draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
+            draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
                              light, adjust_color(color, -50), 2)
-            _draw_star5(canvas, int(cell.x), int(cell.y), cell_radius)
+            draw_star5(canvas, int(cell.x), int(cell.y), cell_radius)
             start_idx += 1
         else:
-            _draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
+            draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
                              (252, 252, 252), (160, 160, 160), 1)
         if DEBUG_SHOW_NUMBERS and font:
             t = font.render(str(i), True, (60, 60, 60))
@@ -394,7 +394,7 @@ def draw_cells(canvas, path_cells, final_paths, cell_radius):
         color = PLAYER_COLORS[p]
         border = adjust_color(color, -50)
         for j, cell in enumerate(path):
-            _draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
+            draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
                              color, border, 2)
             if DEBUG_SHOW_NUMBERS and font:
                 tx = font.render(str(j), True, (60, 60, 60))
@@ -405,7 +405,7 @@ def draw_cells(canvas, path_cells, final_paths, cell_radius):
 # HOME - quadrato con gradiente e riflesso vetro
 # =============================================================================
 
-def _make_home_surface(isize, color):
+def make_home_surface(isize, color):
     """
     Superficie per la casa del giocatore:
     - Ombra esterna
@@ -457,14 +457,14 @@ def draw_home(canvas, home_cells, get_home_geometry):
         angle = player_angle(p, NUM_PLAYERS)
         isize = int(size)
 
-        home_surf, pad = _make_home_surface(isize, PLAYER_COLORS[p])
+        home_surf, pad = make_home_surface(isize, PLAYER_COLORS[p])
         rotated = pygame.transform.rotate(home_surf, -angle)
         rw, rh = rotated.get_size()
         canvas.blit(rotated, (int(hx - rw / 2), int(hy - rh / 2)))
 
         # Celle slot
         for cell in home_cells[p]:
-            _draw_cell_bevel(canvas, cell.x, cell.y, size * 0.16,
+            draw_cell_bevel(canvas, cell.x, cell.y, size * 0.16,
                              (255, 255, 255), (170, 170, 170), 1)
 
 
@@ -596,7 +596,7 @@ def draw_pawns(canvas, players, cell_size):
 # HUD - pannello info (debug)
 # =============================================================================
 
-def _gradient_rect(surf, rect, r, c_top, c_bot, a_top, a_bot):
+def gradient_rect(surf, rect, r, c_top, c_bot, a_top, a_bot):
     """Gradiente verticale liscio dentro rect."""
     x, y, w, h = rect.x, rect.y, rect.width, rect.height
     for row in range(h):
@@ -640,7 +640,7 @@ def draw_info(screen, font, current_phase, current_player, dice_roll):
     px, py = 14, 14
 
     ps = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-    _gradient_rect(ps, pygame.Rect(0, 0, panel_w, panel_h), corner_r,
+    gradient_rect(ps, pygame.Rect(0, 0, panel_w, panel_h), corner_r,
                    (25, 25, 25), (50, 50, 50), 205, 185)
 
     border_s = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
@@ -649,7 +649,7 @@ def draw_info(screen, font, current_phase, current_player, dice_roll):
     ps.blit(border_s, (0, 0))
 
     glass = pygame.Surface((panel_w, panel_h // 2), pygame.SRCALPHA)
-    _gradient_rect(glass, pygame.Rect(1, 1, panel_w - 2, panel_h // 2 - 1),
+    gradient_rect(glass, pygame.Rect(1, 1, panel_w - 2, panel_h // 2 - 1),
                    corner_r, (255, 255, 255), (255, 255, 255), 26, 3)
     ps.blit(glass, (0, 0))
 

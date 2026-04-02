@@ -437,7 +437,7 @@ def next_phase(phase):
     return order[(order.index(phase) + 1) % len(order)]
 
 
-def _phase_label(phase):
+def phase_label(phase):
     """Formato leggibile del nome fase."""
     return str(phase).split('.')[-1].replace('_', ' ')
 
@@ -662,7 +662,7 @@ def main():
                 name = player_names.get(current_player.index)
                 dice_display.notify_roll(r)
                 if dice_pending["is_six"]:
-                    msg_bar.push(f" {name} Mossa bonus!")
+                    msg_bar.push(f"{name} Mossa bonus!")
                 dice_pending["active"] = False
 
         num_players = costanti.NUM_PLAYERS
@@ -752,7 +752,7 @@ def main():
                     piece_anim_started = False
                     if current_player.check_victory():
                         name = player_names.get(current_player.index)
-                        msg_bar.push(f" {name} ha vinto la partita!")
+                        msg_bar.push(f"{name} ha vinto la partita!")
                         current_phase = TurnPhase.GAME_OVER
                     else:
                         current_phase = TurnPhase.MESSAGE_DISPLAY
@@ -779,13 +779,13 @@ def main():
         elif current_phase == TurnPhase.MESSAGE_DISPLAY:
             if current_player.check_victory():
                 name = player_names.get(current_player.index)
-                msg_bar.push(f" {name} ha vinto la partita!")
+                msg_bar.push(f"{name} ha vinto la partita!")
                 current_phase = TurnPhase.GAME_OVER
             else:
                 bonus = current_player.extra_turn_earned
                 if dice_roll == 6 or bonus:
                     if bonus:
-                        msg_bar.push(f" {player_names.get(current_player.index)} ha mangiato - Mossa bonus!")
+                        msg_bar.push(f"{player_names.get(current_player.index)} ha mangiato - Mossa bonus!")
                     current_player.extra_turn_earned = False
                 else:
                     current_player.turns += 1
@@ -804,7 +804,7 @@ def main():
                    get_home_geometry, cell_radius, current_player.index,
                    dice, screen_shake_x, screen_shake_y, dt)
         leaderboard.draw(screen, players, player_names, current_player.index, screen_height)
-        turn_banner.draw(screen, current_player.index, _phase_label(current_phase),
+        turn_banner.draw(screen, current_player.index, phase_label(current_phase),
                         player_names.get(current_player.index), screen_width)
         dice_display.draw(screen, dice_roll, screen_width)
         toolbar.draw(screen, screen_width)

@@ -314,7 +314,7 @@ def ai_turtle(player, players, dice_roll, path_cells, final_paths):
 # AI: LEONE (cacciatore aggressivo)
 # =============================================================================
 
-def _leone_predict_bonus(landing_cell, path_cells, all_pawns, player_index):
+def lion_predict_bonus(landing_cell, path_cells, all_pawns, player_index):
     """
     Dato=6: stima il valore del turno bonus dopo essersi mossi.
     Restituisce il punteggio del nemico più avanzato raggiungibile con dado 1-6.
@@ -405,7 +405,7 @@ def ai_lion(player, players, dice_roll, path_cells, final_paths):
             else:
                 landing = simulate_move(pawn, dice_roll, path_cells, final_paths)
  
-            bonus = _leone_predict_bonus(landing, path_cells, all_pawns, player.index)
+            bonus = lion_predict_bonus(landing, path_cells, all_pawns, player.index)
             predict_scores[pawn] = bonus
  
         if predict_scores:
@@ -472,7 +472,7 @@ _W_SAFE_BONUS = 60
 _W_PREDICT_6 = 40
 
 
-def _game_phase(player, players):
+def game_phase(player, players):
     """
     Restituisce la fase di gioco dal punto di vista del giocatore:
       'early' – 0-1 pedine fuori
@@ -496,7 +496,7 @@ def _game_phase(player, players):
     return 'mid'
 
 
-def _phase_weights(phase):
+def phase_weights(phase):
     """
     Moltiplicatori sui pesi base in base alla fase di gioco.
     """
@@ -517,7 +517,7 @@ def _phase_weights(phase):
         }
 
 
-def _expected_reroll_value(player, players, path_cells, final_paths):
+def expected_reroll_value(player, players, path_cells, final_paths):
     """
     Stima del valore atteso del rilancio con dado=6.
     """
@@ -540,7 +540,7 @@ def _expected_reroll_value(player, players, path_cells, final_paths):
     return (total / count) if count else 0
 
 
-def _score_move(pawn, dice_roll, player, players, path_cells, final_paths,
+def score_move(pawn, dice_roll, player, players, path_cells, final_paths,
                 all_pawns, phase, mults):
     """
     Calcola il punteggio euristico per una mossa.
@@ -560,7 +560,7 @@ def _score_move(pawn, dice_roll, player, players, path_cells, final_paths,
         score += _W_EXIT_HOME * mults['exit']
         score += danger * _W_DANGER * mults['danger']
         if dice_roll == 6:
-            reroll_val = _expected_reroll_value(player, players, path_cells, final_paths)
+            reroll_val = expected_reroll_value(player, players, path_cells, final_paths)
             score += reroll_val * (_W_PREDICT_6 / 100.0) * mults['predict']
         return score
  
@@ -613,7 +613,7 @@ def _score_move(pawn, dice_roll, player, players, path_cells, final_paths,
  
     # Fattore: predict rilancio dado=6
     if dice_roll == 6:
-        reroll_val = _expected_reroll_value(player, players, path_cells, final_paths)
+        reroll_val = expected_reroll_value(player, players, path_cells, final_paths)
         score += reroll_val * (_W_PREDICT_6 / 100.0) * mults['predict']
  
     return score
@@ -629,14 +629,14 @@ def ai_strategist(player, players, dice_roll, path_cells, final_paths):
         return None
  
     all_pawns = all_pawns_list(players)
-    phase = _game_phase(player, players)
-    mults = _phase_weights(phase)
+    phase = game_phase(player, players)
+    mults = phase_weights(phase)
  
     best_pawn = None
     best_score = float('-inf')
  
     for pawn in valid:
-        s = _score_move(pawn, dice_roll, player, players, path_cells, final_paths,
+        s = score_move(pawn, dice_roll, player, players, path_cells, final_paths,
                         all_pawns, phase, mults)
         if s > best_score:
             best_score = s

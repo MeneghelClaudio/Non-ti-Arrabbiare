@@ -61,8 +61,8 @@ class Pedina:
     # =========================================================================
 
     def move_to(self, new_cell):
-        """Sposta la pedina a una nuova cella (senza animazione)."""
-        self.old_cell = new_cell
+        """Sposta la pedina a una nuova cella (avvia animazione)."""
+        self.old_cell = self.current_cell
         self.current_cell = new_cell
         self.anim_progress = 0.0
 

@@ -41,7 +41,7 @@ COLOR_NAMES = list(PLAYER_COLORS.keys())
 BOT_LEVELS  = ["Scimmia", "Lepre", "Tartaruga", "Leone", "Stratega", "Casuale"]
 _REAL_LEVELS = [l for l in BOT_LEVELS if l != "Casuale"]
 
-def _resolve_level(level: str) -> str:
+def resolve_level(level: str) -> str:
     """Se il livello è 'Casuale', sceglie casualmente uno dei livelli reali."""
     if level == "Casuale":
         return random.choice(_REAL_LEVELS)
@@ -55,11 +55,11 @@ SIDE_PAD     = 18
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
-def _darken(h, f=0.7):
+def darken(h, f=0.7):
     r,g,b = int(h[1:3],16),int(h[3:5],16),int(h[5:7],16)
     return f"#{int(r*f):02x}{int(g*f):02x}{int(b*f):02x}"
 
-def _lighten(h, f=1.2):
+def lighten(h, f=1.2):
     r=min(255,int(int(h[1:3],16)*f))
     g=min(255,int(int(h[3:5],16)*f))
     b=min(255,int(int(h[5:7],16)*f))
@@ -129,7 +129,7 @@ class ColorMenuButton(tk.Frame):
             fg_text = "#000000"
             self.menu.add_command(
                 label=label, background=hex_c, foreground=fg_text,
-                activebackground=_lighten(hex_c),
+                activebackground=lighten(hex_c),
                 font=("Segoe UI", self.font_size, "bold"),
                 command=lambda n=name: self._select(n))
 
@@ -582,15 +582,15 @@ class StartScreen:
             def _cmd_with_click(c=cmd): _play_click(); c()
             b = tk.Button(f, text=text, command=_cmd_with_click,
                           bg=bg, fg=TEXT_W,
-                          activebackground=_darken(bg),
+                          activebackground=darken(bg),
                           activeforeground=TEXT_W,
                           font=("Impact", 13),
                           relief="flat", bd=0,
                           padx=18, pady=8,
                           cursor="hand2")
             b.pack()
-            tk.Frame(f, height=3, bg=_darken(bg)).pack(fill="x")
-            b.bind("<Enter>", lambda e: b.config(bg=_lighten(bg)))
+            tk.Frame(f, height=3, bg=darken(bg)).pack(fill="x")
+            b.bind("<Enter>", lambda e: b.config(bg=lighten(bg)))
             b.bind("<Leave>", lambda e: b.config(bg=bg))
 
         mk_btn(bf, self.adv_btn_var.get() if not callable(self.adv_btn_var)
@@ -605,14 +605,14 @@ class StartScreen:
         b = tk.Button(f, textvariable=self.adv_btn_var,
                       command=self._toggle_advanced,
                       bg=ACCENT_BLUE, fg=TEXT_W,
-                      activebackground=_darken(ACCENT_BLUE),
+                      activebackground=darken(ACCENT_BLUE),
                       activeforeground=TEXT_W,
                       font=("Impact", 13),
                       relief="flat", bd=0,
                       padx=18, pady=8, cursor="hand2")
         b.pack()
-        tk.Frame(f, height=3, bg=_darken(ACCENT_BLUE)).pack(fill="x")
-        b.bind("<Enter>", lambda e: b.config(bg=_lighten(ACCENT_BLUE)))
+        tk.Frame(f, height=3, bg=darken(ACCENT_BLUE)).pack(fill="x")
+        b.bind("<Enter>", lambda e: b.config(bg=lighten(ACCENT_BLUE)))
         b.bind("<Leave>", lambda e: b.config(bg=ACCENT_BLUE))
 
         mk_btn(bf, "▶  INIZIA LA PARTITA",
@@ -790,7 +790,7 @@ class StartScreen:
                 "color": self.p_color[i].get(),
                 "hex":   PLAYER_COLORS.get(self.p_color[i].get(), "#888"),
                 "bot":   is_bot,
-                "level": _resolve_level(self.p_level[i].get()) if is_bot else None,
+                "level": resolve_level(self.p_level[i].get()) if is_bot else None,
                 "pawns": self.num_pawns.get(),
             })
 
