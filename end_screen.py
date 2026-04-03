@@ -1,35 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
-import json, os, sys, subprocess
+import json, os, sys
 
-def _play_click():
-    try:
-        import pygame
-        if not pygame.get_init():
-            pygame.init()
-        # Gestione del sound manager per evitare errori di riproduzione dei suoni
-        if not pygame.mixer.get_init():
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-        base = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base, "assets", "sounds", "click.wav")
-        if os.path.isfile(path):
-            pygame.mixer.Sound(path).play()
-    except Exception:
-        pass
+from main import get_base_path
+from sound import play_click
 
 def _play_results():
+    # Only use the global sfx - don't try to reinit pygame
     try:
-        import pygame
-        if not pygame.get_init():
-            pygame.init()
-        if not pygame.mixer.get_init():
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-        base = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base, "assets", "sounds", "results.wav")
-        if os.path.isfile(path):
-            pygame.mixer.Sound(path).play()
-    except Exception:
-        pass
+        import sound as _sm
+        if _sm._global_sfx:
+            _sm._global_sfx.play("results")
+    except Exception as e:
+        print(f"[_play_results] error: {e}")
 
 # ── Click interceptor globale ──────────────────────────────────────────────────
 def _setup_click_interceptor(root):
@@ -42,7 +25,7 @@ def _setup_click_interceptor(root):
         w = event.widget
         while w is not None and w is not root:
             if isinstance(w, _INTERACTIVE_TYPES):
-                _play_click()
+                play_click()
                 break
             w = getattr(w, 'master', None)
     root.bind('<Button-1>', on_click, add='+')
@@ -138,7 +121,10 @@ class EndScreen:
         self._build_all()
         self._initial_size()
         self.root.bind("<Configure>", self._on_resize)
-        _play_results()
+        
+        # Sound disabled - causes issues after game ends
+        # play sound after window shows
+        # self.root.after(500, _play_results)
 
         _setup_click_interceptor(self.root)
 
@@ -443,11 +429,12 @@ class EndScreen:
 
     # ── Callbacks ─────────────────────────────────────────────────────────────
     def _new_game(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        start_path = os.path.join(script_dir, "start_screen.py")
-        if os.path.isfile(start_path):
-            subprocess.Popen([sys.executable, start_path])
         self.root.destroy()
+        import start_screen
+        import tkinter as tk
+        root = tk.Tk()
+        app = start_screen.StartScreen(root)
+        root.mainloop()
 
     def _exit(self):
         self.root.destroy()

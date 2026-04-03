@@ -26,6 +26,7 @@ Principi di design:
 
 import math
 import pygame
+import costanti
 from costanti import *
 
 # Fallback costanti opzionali
@@ -159,7 +160,7 @@ def notify_player_change(new_player):
     state = _bg_state
     if state["last_player"] == new_player:
         return
-    new_color = make_bg_base(PLAYER_COLORS[new_player])
+    new_color = make_bg_base(costanti.PLAYER_COLORS[new_player])
     if state["current_color"] is None:
         state["current_color"] = new_color
         state["from_color"] = new_color
@@ -242,9 +243,9 @@ def draw_background(canvas, center_x, center_y, current_player):
     w, h = canvas.get_size()
     notify_player_change(current_player)
 
-    base = _bg_state["current_color"] or make_bg_base(PLAYER_COLORS[current_player])
+    base = _bg_state["current_color"] or make_bg_base(costanti.PLAYER_COLORS[current_player])
     idx = _bg_state["last_player"] if _bg_state["last_player"] >= 0 else current_player
-    pure = PLAYER_COLORS[idx]
+    pure = costanti.PLAYER_COLORS[idx]
     cx, cy = int(center_x), int(center_y)
     max_r = int(math.hypot(w, h) * 0.72)
 
@@ -376,7 +377,7 @@ def draw_cells(canvas, path_cells, final_paths, cell_radius):
 
     for i, cell in enumerate(path_cells):
         if cell.is_start:
-            color = PLAYER_COLORS[start_idx]
+            color = costanti.PLAYER_COLORS[start_idx]
             light = adjust_color(color, +55)
             draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
                              light, adjust_color(color, -50), 2)
@@ -391,7 +392,7 @@ def draw_cells(canvas, path_cells, final_paths, cell_radius):
 
     # Celle final: colore pieno del player
     for p, path in final_paths.items():
-        color = PLAYER_COLORS[p]
+        color = costanti.PLAYER_COLORS[p]
         border = adjust_color(color, -50)
         for j, cell in enumerate(path):
             draw_cell_bevel(canvas, cell.x, cell.y, cell_radius,
@@ -457,7 +458,7 @@ def draw_home(canvas, home_cells, get_home_geometry):
         angle = player_angle(p, NUM_PLAYERS)
         isize = int(size)
 
-        home_surf, pad = make_home_surface(isize, PLAYER_COLORS[p])
+        home_surf, pad = make_home_surface(isize, costanti.PLAYER_COLORS[p])
         rotated = pygame.transform.rotate(home_surf, -angle)
         rw, rh = rotated.get_size()
         canvas.blit(rotated, (int(hx - rw / 2), int(hy - rh / 2)))
@@ -474,7 +475,7 @@ def draw_home(canvas, home_cells, get_home_geometry):
 
 def draw_center(canvas, center_x, center_y, center_radius, cell_size, current_player):
     """Disegna il centro del tabellone."""
-    color = adjust_color(PLAYER_COLORS[current_player], +DARKER)
+    color = adjust_color(costanti.PLAYER_COLORS[current_player], +DARKER)
     outer_r = int(center_radius + cell_size * 2)
     inner_r = int(center_radius)
     cx, cy = int(center_x), int(center_y)
@@ -551,7 +552,7 @@ def draw_connections(canvas, path_cells, final_paths, center_x, center_y):
 
     # Final paths (linee colorate)
     for p, path in final_paths.items():
-        lc = adjust_color(PLAYER_COLORS[p], -35)
+        lc = adjust_color(costanti.PLAYER_COLORS[p], -35)
         for a, b in zip(path, path[1:]):
             pygame.draw.line(canvas, lc,
                              (int(a.x), int(a.y)), (int(b.x), int(b.y)), SPESSORE)
@@ -562,7 +563,7 @@ def draw_connections(canvas, path_cells, final_paths, center_x, center_y):
             arm = getattr(cell, "player", None)
             if arm is not None and arm in final_paths and final_paths[arm]:
                 ff = final_paths[arm][0]
-                lc = adjust_color(PLAYER_COLORS[arm], -20)
+                lc = adjust_color(costanti.PLAYER_COLORS[arm], -20)
                 pygame.draw.line(canvas, lc,
                                 (int(cell.x), int(cell.y)),
                                 (int(ff.x), int(ff.y)), SPESSORE)
@@ -615,7 +616,7 @@ def gradient_rect(surf, rect, r, c_top, c_bot, a_top, a_bot):
 def draw_info(screen, font, current_phase, current_player, dice_roll):
     """Pannello info (fase, giocatore, dado)."""
     phase_str = str(current_phase).split('.')[-1].replace('_', ' ')
-    player_color = PLAYER_COLORS[current_player]
+    player_color = costanti.PLAYER_COLORS[current_player]
 
     font_lbl = pygame.font.SysFont("Consolas", 15)
     font_val = pygame.font.SysFont("Consolas", 17, bold=True)
@@ -735,7 +736,7 @@ def draw_board(screen, center_x, center_y, center_radius, cell_size, arm_length,
         cx, cy = int(center_x), int(center_y)
         max_r = int(math.hypot(w, h) * 0.72)
         ripple_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        pure = PLAYER_COLORS[_bg_state["last_player"] if _bg_state["last_player"] >= 0 else current_player]
+        pure = costanti.PLAYER_COLORS[_bg_state["last_player"] if _bg_state["last_player"] >= 0 else current_player]
         ring_color = adjust_color(pure, +30)
         for ring in _ripple_state["rings"]:
             progress = ring["r"] / ring["max_r"]

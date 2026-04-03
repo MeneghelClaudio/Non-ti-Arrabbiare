@@ -16,7 +16,7 @@ import math
 import json
 import os
 import pygame
-from costanti import PLAYER_COLORS, NUM_PLAYERS, PEDINE_PER_PLAYER
+import costanti
 
 
 # =============================================================================
@@ -191,7 +191,7 @@ class TurnBanner:
         self._ensure_fonts()
 
         # Colore del giocatore corrente per la striscia
-        color = PLAYER_COLORS[current_player]
+        color = costanti.PLAYER_COLORS[current_player]
         
         # Dimensioni banner
         w, h = 260, 64
@@ -420,12 +420,12 @@ class Leaderboard:
             # Evidenziazione riga giocatore corrente (sfondo colorato)
             if is_current:
                 hi = pygame.Surface((w - 2, row_h), pygame.SRCALPHA)
-                hi_c = PLAYER_COLORS[pid]
+                hi_c = costanti.PLAYER_COLORS[pid]
                 gradient_vertical(hi, pygame.Rect(0, 0, w - 2, row_h), 0,
                                   hi_c, hi_c, 35, 18)
                 surf.blit(hi, (1, ry))
                 # Barra colorata a sinistra
-                pygame.draw.rect(surf, (*PLAYER_COLORS[pid], 220),
+                pygame.draw.rect(surf, (*costanti.PLAYER_COLORS[pid], 220),
                                 pygame.Rect(1, ry + 2, 3, row_h - 4))
 
             # Posizione (oro/argento/bronzo per i primi 3)
@@ -437,7 +437,7 @@ class Leaderboard:
 
             # Pallino colore giocatore
             dot_r = DOT_R + 2 if is_current else DOT_R
-            draw_player_dot(surf, COL_DOT + dot_r, ry + row_h // 2, dot_r, PLAYER_COLORS[pid])
+            draw_player_dot(surf, COL_DOT + dot_r, ry + row_h // 2, dot_r, costanti.PLAYER_COLORS[pid])
 
             # Nome giocatore + emoji AI per bot
             name = player_names.get(pid)

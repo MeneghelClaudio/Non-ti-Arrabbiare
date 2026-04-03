@@ -15,9 +15,19 @@ Nota: modifica _SOUNDS_DIR e _MUSIC_DIR per cambiare i percorsi.
 import os
 import random
 import pygame
+import sys
 
-# Percorsi base
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+def get_base_path():
+    if getattr(sys, 'frozen', False):
+        if hasattr(sys, '_MEIPASS'):
+            return sys._MEIPASS
+        return os.path.dirname(sys.executable)
+    base = os.path.dirname(os.path.abspath(__file__))
+    if os.path.isdir(os.path.join(base, "assets")):
+        return base
+    return os.path.dirname(base)
+
+_BASE_DIR = get_base_path()
 _SOUNDS_DIR = os.path.join(_BASE_DIR, "assets", "sounds")
 _MUSIC_DIR = os.path.join(_BASE_DIR, "assets", "music")
 
@@ -48,9 +58,9 @@ class SoundManager:
     
     def __init__(self):
         self._ready = False
-        self._muted = False        # mute globale (SFX + musica)
-        self._muted_sfx = False   # mute solo SFX
-        self._muted_music = False  # mute solo musica
+        self._muted = False
+        self._muted_sfx = False
+        self._muted_music = False
         self._sounds = {}
         self._playlist = []
         self._pl_index = 0
@@ -60,7 +70,6 @@ class SoundManager:
         self._build_playlist()
         self._start_music()
 
-        # Registra in pedine.py per i suoni durante il movimento
         try:
             import pedine as _pm
             _pm._sfx_instance = self
@@ -93,15 +102,12 @@ class SoundManager:
                     self._sounds[name] = snd
                 except Exception as e:
                     print(f"[SoundManager] errore caricamento '{path}': {e}")
-            else:
-                print(f"[SoundManager] file non trovato: '{path}'")
 
     def _build_playlist(self):
         """Costruisce la playlist dalla cartella musica."""
         if not self._ready:
             return
         if not os.path.isdir(_MUSIC_DIR):
-            print(f"[SoundManager] cartella musica non trovata: '{_MUSIC_DIR}'")
             return
         exts = {".mp3", ".ogg", ".wav"}
         tracks = [
@@ -110,7 +116,6 @@ class SoundManager:
             if os.path.splitext(f)[1].lower() in exts
         ]
         if not tracks:
-            print(f"[SoundManager] nessun brano in '{_MUSIC_DIR}'")
             return
         random.shuffle(tracks)
         self._playlist = tracks
@@ -194,6 +199,15 @@ _global_sfx = None
 
 
 def play_click():
-    """Click standalone per start_screen e end_screen."""
-    if _global_sfx:
-        _global_sfx.play("click")
+    """Click standalone per start_screen and end_screen."""
+    # Always use fallback - the global sfx may have closed mixer after game ends
+    try:
+        import pygame
+        if not pygame.mixer.get_init():
+            pygame.init()
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        path = os.path.join(_SOUNDS_DIR, "click.wav")
+        if os.path.isfile(path):
+            pygame.mixer.Sound(path).play()
+    except Exception:
+        pass

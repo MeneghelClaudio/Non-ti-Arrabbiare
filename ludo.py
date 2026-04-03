@@ -28,13 +28,23 @@ def _hex_to_rgb(h):
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
-def _load_config():
+def _load_config(config_path=None):
     """Carica la configurazione da file o args."""
+    def get_base_path():
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(sys.executable)
+        base = os.path.dirname(os.path.abspath(__file__))
+        if os.path.isdir(os.path.join(base, "assets")):
+            return base
+        return os.path.dirname(base)
+    
     candidates = []
-    if len(sys.argv) > 1:
+    if config_path:
+        candidates.append(config_path)
+    if len(sys.argv) > 1 and not config_path:
         candidates.append(sys.argv[1])
     candidates.append(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "game_config.json")
+        os.path.join(get_base_path(), "game_config.json")
     )
     for path in candidates:
         if os.path.isfile(path):
@@ -55,7 +65,7 @@ _config = _load_config()
 
 import costanti
 
-if _config.get("players"):
+if _config and _config.get("players"):
     players_cfg = _config["players"]
     total = len(players_cfg)
     pawns = _config.get("pawns_each", 4)
@@ -77,8 +87,7 @@ else:
 # =============================================================================
 
 from costanti import (
-    NUM_PLAYERS, PLAYER_COLORS, PEDINE_PER_PLAYER,
-    FINAL_CELLS, CELLS_PER_ARM, HOME_OFFSETS,
+    HOME_OFFSETS,
     SCREEN_SHAKE_AMPLITUDE, SCREEN_SHAKE_TIME, SCREEN_SHAKE_DECAY,
 )
 from draw import draw_board, polar, player_angle, invalidate_board_cache
@@ -175,56 +184,59 @@ sfx = None
 
 def show_end_screen():
     """Apre la schermata finale con i risultati."""
+    print("[ludo] show_end_screen called")
     import tkinter as tk
     try:
         from end_screen import EndScreen
-    except ImportError:
-        print("[ludo] EndScreen non trovata.")
+    except ImportError as e:
+        print(f"[ludo] EndScreen ImportError: {e}")
+        return
+    except Exception as e:
+        print(f"[ludo] EndScreen exception: {e}")
         return
 
-    players_data = []
-    for p in players:
-        name = player_names.get(p.index) if player_names else f"Giocatore {p.index + 1}"
-        color_rgb = costanti.PLAYER_COLORS[p.index]
-        hex_color = "#{:02x}{:02x}{:02x}".format(*color_rgb)
+    print("[ludo] creating EndScreen...")
+    try:
+        players_data = []
+        for p in players:
+            name = player_names.get(p.index) if player_names else f"Giocatore {p.index + 1}"
+            color_rgb = costanti.PLAYER_COLORS[p.index]
+            hex_color = "#{:02x}{:02x}{:02x}".format(*color_rgb)
 
-        color_name = "Colore"
-        if _config.get("players") and p.index < len(_config["players"]):
-            color_name = _config["players"][p.index].get("color", color_name)
-            if not player_names:
-                name = _config["players"][p.index].get("name", name)
+            color_name = "Colore"
+            if _config.get("players") and p.index < len(_config["players"]):
+                color_name = _config["players"][p.index].get("color", color_name)
+                if not player_names:
+                    name = _config["players"][p.index].get("name", name)
 
-        pawns_home = p.count_pedine_in_final()
-        pawns_on_board = sum(
-            1 for pawn in p.pedine
-            if not pawn.current_cell.is_home and not getattr(pawn, 'at_goal', False)
-        )
-        active_pawns = [pawn for pawn in p.pedine
-                       if not pawn.current_cell.is_home
-                       and not getattr(pawn, 'at_goal', False)]
-        best_steps = max((getattr(pawn, 'steps_total', 0) for pawn in active_pawns), default=0)
-        if not active_pawns:
-            best_steps = max((getattr(pawn, 'steps_total', 0) for pawn in p.pedine), default=0)
+            pawns_home = p.count_pedine_in_final()
+            pawns_on_board = sum(
+                1 for pawn in p.pedine
+                if not pawn.current_cell.is_home and not getattr(pawn, 'at_goal', False)
+            )
+            players_data.append({
+                "name": name,
+                "hex": hex_color,
+                "color": color_name,
+                "pawns_home": pawns_home,
+                "pawns_on_board": pawns_on_board,
+            })
+    except Exception as e:
+        print(f"[ludo] Error building players_data: {e}")
+        players_data = []
 
-        players_data.append({
-            "name": name,
-            "color": color_name,
-            "hex": hex_color,
-            "pawns_home": pawns_home,
-            "pawns_on_board": pawns_on_board,
-            "best_steps": best_steps,
-            "turns": p.turns,
-            "bot": getattr(p, 'is_bot', False),
-        })
-
-    game_data = {
-        "players": players_data,
-        "pawns_each": costanti.PEDINE_PER_PLAYER,
-    }
-
-    root = tk.Tk()
-    EndScreen(root, game_data)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        game_data = {
+            "players": players_data,
+            "pawns_each": costanti.PEDINE_PER_PLAYER,
+        }
+        app = EndScreen(root, game_data)
+        root.mainloop()
+    except Exception as e:
+        print(f"[ludo] Error in EndScreen mainloop: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 # =============================================================================
@@ -484,15 +496,64 @@ def roll_dice():
 # MAIN
 # =============================================================================
 
-def main():
+def main(config_path=None):
     global screen_width, screen_height
     global players, current_player, current_phase, dice, dice_roll
     global player_names, turn_banner, dice_display, leaderboard
     global msg_bar, toolbar, settings_popup
     global bot_timer, bot_phase_handled, piece_anim_started
     global is_fullscreen
-    global sfx
+    global sfx, _config
 
+    # Always reload config from file to get the latest settings
+    config = _load_config(config_path)
+
+    # Reload all modules that import costanti to get fresh values
+    import importlib
+    import sys
+    
+    modules_to_reload = ['costanti', 'draw', 'pedine', 'celle', 'player', 'logica', 'dado', 'hud']
+    for mod_name in modules_to_reload:
+        if mod_name in sys.modules:
+            try:
+                importlib.reload(sys.modules[mod_name])
+            except Exception as e:
+                print(f"[ludo] Could not reload {mod_name}: {e}")
+
+    import costanti
+
+    # Apply default values first
+    costanti.NUM_PLAYERS = 4
+    costanti.PEDINE_PER_PLAYER = 4
+    costanti.FINAL_CELLS = 4
+    costanti.CELLS_PER_ARM = 5
+    costanti.PLAYER_COLORS = [
+        (1.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0),
+        (0.0, 1.0, 0.0),
+        (1.0, 1.0, 0.0),
+    ]
+
+    if config.get("players"):
+        players_cfg = config["players"]
+        total = len(players_cfg)
+        pawns = config.get("pawns_each", 4)
+
+        costanti.NUM_PLAYERS = total
+        costanti.PEDINE_PER_PLAYER = pawns
+        costanti.FINAL_CELLS = pawns
+        costanti.CELLS_PER_ARM = 5
+        costanti.PLAYER_COLORS = [_hex_to_rgb(p["hex"]) for p in players_cfg]
+
+        _names_from_config = [p.get("name", f"Giocatore {i+1}")
+                              for i, p in enumerate(players_cfg)]
+    else:
+        _names_from_config = None
+
+    # After applying config, reload draw.py again so it sees the updated NUM_PLAYERS
+    if 'draw' in sys.modules:
+        importlib.reload(sys.modules['draw'])
+    
     n = costanti.NUM_PLAYERS
     cpp = costanti.PEDINE_PER_PLAYER
 
@@ -503,8 +564,8 @@ def main():
     dice_pending["active"] = False
     dice_pending["timer"] = 0.0
 
-    if _config.get("players"):
-        for i, pcfg in enumerate(_config["players"]):
+    if config.get("players"):
+        for i, pcfg in enumerate(config["players"]):
             if i < len(players):
                 players[i].is_bot = bool(pcfg.get("bot", False))
                 players[i].ai_level = pcfg.get("level", "Casuale") or "Casuale"
@@ -517,10 +578,10 @@ def main():
     toolbar = Toolbar()
     settings_popup = SettingsPopup()
 
-    if sfx is None:
-        sfx = SoundManager()
-        import sound as _sm
-        _sm._global_sfx = sfx
+    # Always create new SoundManager (reinit pygame mixer each game)
+    sfx = SoundManager()
+    import sound as _sm
+    _sm._global_sfx = sfx
 
     if _names_from_config:
         player_names.set_names(_names_from_config)
@@ -873,17 +934,22 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
+    pygame.display.quit()
     pygame.quit()
 
     if goto_menu:
-        import subprocess as _sp, os as _os
-        _sp.Popen([sys.executable,
-                   _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
-                                 "start_screen.py")])
+        import subprocess
+        import os
+        base = os.path.dirname(os.path.abspath(__file__))
+        subprocess.Popen([sys.executable, os.path.join(base, "main.py")])
+        return
     elif current_phase == TurnPhase.GAME_OVER:
-        show_end_screen()
-
-    sys.exit()
+        try:
+            show_end_screen()
+        except Exception as e:
+            print(f"[ludo] Error in show_end_screen: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

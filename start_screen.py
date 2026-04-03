@@ -1,21 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
-import random, json, os, sys, subprocess
+import random, json, os, sys
 
-def _play_click():
-    try:
-        import pygame
-        if not pygame.get_init():
-            pygame.init()
-        # Gestione del sound manager per evitare errori di riproduzione dei suoni
-        if not pygame.mixer.get_init():
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-        base = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base, "assets", "sounds", "click.wav")
-        if os.path.isfile(path):
-            pygame.mixer.Sound(path).play()
-    except Exception:
-        pass
+from main import get_base_path
+from sound import play_click
 
 # ── Click interceptor globale ──────────────────────────────────────────────────
 def _setup_click_interceptor(root):
@@ -28,7 +16,7 @@ def _setup_click_interceptor(root):
         w = event.widget
         while w is not None and w is not root:
             if isinstance(w, _INTERACTIVE_TYPES):
-                _play_click()
+                play_click()
                 break
             w = getattr(w, 'master', None)
     root.bind('<Button-1>', on_click, add='+')
@@ -161,7 +149,7 @@ class ColorMenuButton(tk.Frame):
                 command=lambda n=name: self._select(n))
 
     def _select(self, name):
-        _play_click()
+        play_click()
         self.color_var.set(name)
         self.refresh()
 
@@ -830,8 +818,7 @@ class StartScreen:
             "pawns_each":  self.num_pawns.get(),
         }
 
-        script_dir  = os.path.dirname(os.path.abspath(__file__))
-        ludo_path   = os.path.join(script_dir, "ludo.py")
+        script_dir = get_base_path()
         config_path = os.path.join(script_dir, "game_config.json")
 
         try:
@@ -841,18 +828,10 @@ class StartScreen:
             messagebox.showerror("Errore", f"Impossibile salvare:\n{err}")
             return
 
-        if not os.path.isfile(ludo_path):
-            messagebox.showerror("File non trovato",
-                f"Non trovo 'ludo.py' in:\n{script_dir}")
-            return
-
-        try:
-            subprocess.Popen([sys.executable, ludo_path, config_path])
-        except Exception as err:
-            messagebox.showerror("Errore avvio", f"{err}")
-            return
-
         self.root.destroy()
+
+        import ludo
+        ludo.main(config_path)
 
 
 if __name__ == "__main__":

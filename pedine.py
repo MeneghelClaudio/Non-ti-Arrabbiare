@@ -217,7 +217,9 @@ class Pedina:
             return
 
         x, y, y_3d, r = state['x'], state['y'], state['y_3d'], state['r']
-        base_color = PLAYER_COLORS[self.player.index]
+        
+        import costanti
+        base_color = costanti.PLAYER_COLORS[self.player.index]
 
         # Corpo: base scura per profondità
         draw_circle(screen, (int(x), int(y_3d)),
@@ -249,7 +251,9 @@ class Pedina:
             return
 
         x, y_3d, r = state['x'], state['y_3d'], state['r']
-        base_color = PLAYER_COLORS[self.player.index]
+        
+        import costanti
+        base_color = costanti.PLAYER_COLORS[self.player.index]
         
         # Oscillazione verticale del triangolo
         altitude = -r * (4 + 0.7 * math.sin(self.timers["total"] * 4))

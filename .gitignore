@@ -1,2 +1,5 @@
 __pycache__/
+build/_build_venv/
+build/game_config.json
+build/Non ti Arrabbiare.exe
 game_config.json
