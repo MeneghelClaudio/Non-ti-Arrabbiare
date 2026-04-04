@@ -247,6 +247,14 @@ def calculate_dimensions():
     arm_length = cell_size * (costanti.CELLS_PER_ARM + 1) + center_radius
     cell_radius = cell_size / 2.3
 
+    scale = 0.95 # Percentuale di ridimensionamento
+    center_x = screen_width / 2
+    center_y = screen_height / 2
+    center_radius *= scale
+    cell_size *= scale
+    arm_length *= scale
+    cell_radius *= scale
+
 
 def get_home_geometry(player_index):
     """Restituisce posizione e dimensione della casa di un giocatore."""

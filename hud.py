@@ -767,7 +767,7 @@ class SettingsPopup:
         self._muted = False
         self._muted_sfx = False
         self._muted_music = False
-        self._fullscreen = False
+        self._fullscreen = True
         self._msg_enabled = True
         self._font_t = None
         self._font_b = None
@@ -775,7 +775,7 @@ class SettingsPopup:
         self._buttons = []
         self._rebuild_buttons()
 
-    def _rebuild_buttons(self, fullscreen=False):
+    def _rebuild_buttons(self, fullscreen=True):
         # Labels che cambiano in base allo stato (mute on/off)
         mute_label = "🔇 Tutto: OFF" if self._muted else "🔊 Tutto: ON"
         sfx_label = "🔕 SFX: OFF" if self._muted_sfx else "🔔 SFX: ON"
@@ -991,8 +991,3 @@ class SettingsPopup:
         scaled = pygame.transform.smoothscale(popup, (rw, rh))
         scaled.set_alpha(alpha)
         screen.blit(scaled, (rx, ry))
-
-
-# ════════════════════════════════════════════════════════════════════════════
-#  TOOLBAR - action bar in basso con pulsanti e info giocatore
-# ════════════════════════════════════════════════════════════════════════════

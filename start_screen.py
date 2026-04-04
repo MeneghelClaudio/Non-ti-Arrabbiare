@@ -312,7 +312,7 @@ class StartScreen:
         tk.Label(title_panel, text="NON T'ARRABBIARE",
                  font=("Impact", fs(20)), fg=TEXT_Y,
                  bg=BG_PANEL).pack()
-        tk.Label(title_panel, text="configura la partita",
+        tk.Label(title_panel, text="Configurazione della partita",
                  font=("Segoe UI", fs(8)), fg=TEXT_M,
                  bg=BG_PANEL).pack()
 
