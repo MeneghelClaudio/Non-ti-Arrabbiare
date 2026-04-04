@@ -991,3 +991,8 @@ class SettingsPopup:
         scaled = pygame.transform.smoothscale(popup, (rw, rh))
         scaled.set_alpha(alpha)
         screen.blit(scaled, (rx, ry))
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  TOOLBAR - action bar in basso con pulsanti e info giocatore
+# ════════════════════════════════════════════════════════════════════════════

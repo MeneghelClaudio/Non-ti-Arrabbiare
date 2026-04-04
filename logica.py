@@ -65,7 +65,7 @@ def simulate_move(pedina, steps, path_cells, final_paths):
             remaining -= 1
             if remaining == 0:
                 return fp[0]
-            dest_idx = remaining - 1
+            dest_idx = remaining
             if dest_idx > goal_slot_idx:
                 return None
             return fp[dest_idx]

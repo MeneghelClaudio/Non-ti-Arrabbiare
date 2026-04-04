@@ -112,12 +112,13 @@ _hud_mod.PEDINE_PER_PLAYER = costanti.PEDINE_PER_PLAYER
 # =============================================================================
 
 class TurnPhase(Enum):
-    WAITING_FOR_ROLL = auto()
-    DICE_ANIMATION = auto()
-    WAITING_FOR_MOVE = auto()
-    PIECE_ANIMATION = auto()
-    MESSAGE_DISPLAY = auto()
-    GAME_OVER = auto()
+    WAITING_FOR_ROLL = auto()   # attesa che il giocatore lanci il dado
+    DICE_ANIMATION = auto()     # animazione del lancio del dado
+    WAITING_FOR_MOVE = auto()   # attesa che il giocatore scelga la pedina da muovere
+    PIECE_ANIMATION = auto()    # animazione del movimento della pedina
+    MESSAGE_DISPLAY = auto()    # visualizzazione messaggio (message bar)
+    VICTORY_DELAY = auto()      # delay animato dopo vittoria, prima di GAME_OVER
+    GAME_OVER = auto()          # partita finita, mostra schermata finale
 
 # Dimensioni schermo e geometria
 screen_width = screen_height = 900
@@ -153,15 +154,18 @@ dice_pending = {
     "sound_played": False,
 }
 
-results_played = False
-
 # Bot timing
 bot_timer = 0.0
 bot_phase_handled = None
 piece_anim_started = False
 
+# Victory delay
+VICTORY_DELAY = 2.5
+victory_delay_active = False
+victory_hold_t = 0.0
+
 # Fullscreen
-is_fullscreen = False
+is_fullscreen = True
 
 # HUD elements
 player_names = turn_banner = dice_display = leaderboard = None
@@ -404,7 +408,11 @@ def reset_game():
     global current_phase, current_player, dice, dice_roll
     global bot_timer, bot_phase_handled, piece_anim_started
     global is_fullscreen
+    global victory_delay_active, victory_fade_t, victory_hold_t
 
+    victory_delay_active = False
+    victory_fade_t = 0.0
+    victory_hold_t = 0.0
     current_phase = TurnPhase.WAITING_FOR_ROLL
     current_player = players[0]
     dice = None
@@ -467,7 +475,7 @@ def roll_dice():
     dist = math.hypot(screen_width, screen_height) / 2 + size
 
     dice = Dado(center_x, center_y, size=size)
-    dice_roll = random.randint(1, 6)
+    dice_roll = random.randint(6, 6)
     dice.lancia(esito=dice_roll,
                 start_x=center_x + math.cos(angle) * dist,
                 start_y=center_y + math.sin(angle) * dist,
@@ -499,7 +507,6 @@ def main():
     players = [Player(p, timers, cpp) for p in range(n)]
     current_player = players[0]
     current_phase = TurnPhase.WAITING_FOR_ROLL
-    results_played = False
     dice_pending["active"] = False
     dice_pending["timer"] = 0.0
 
@@ -516,6 +523,19 @@ def main():
     msg_bar = MessageBar()
     toolbar = Toolbar()
     settings_popup = SettingsPopup()
+
+    def update_victory_delay(dt):
+        global victory_delay_active, victory_fade_t, victory_hold_t
+        if not victory_delay_active:
+            return False
+        victory_hold_t += dt
+        return victory_hold_t >= VICTORY_DELAY
+
+    def start_victory_delay():
+        global victory_delay_active, victory_fade_t, victory_hold_t
+        victory_delay_active = True
+        victory_fade_t = 0.0
+        victory_hold_t = 0.0
 
     if sfx is None:
         sfx = SoundManager()
@@ -723,11 +743,13 @@ def main():
         # GAME PHASES
         # ============================================================
 
-        # GAME_OVER: riproduce suono risultati, esce dal loop.
-        if current_phase == TurnPhase.GAME_OVER:
-            if sfx and not results_played:
-                sfx.play("results")
-                results_played = True
+        # VICTORY_DELAY: pausa dopo la vittoria prima della schermata finale.
+        if current_phase == TurnPhase.VICTORY_DELAY:
+            if update_victory_delay(dt):
+                current_phase = TurnPhase.GAME_OVER
+
+        # GAME_OVER: esce dal loop principale, poi apre la schermata finale.
+        elif current_phase == TurnPhase.GAME_OVER:
             running = False
 
         # DICE_ANIMATION: aggiorna il dado 3D in volo.
@@ -788,7 +810,8 @@ def main():
                     if current_player.check_victory():
                         name = player_names.get(current_player.index)
                         msg_bar.push(f"{name} ha vinto la partita!")
-                        current_phase = TurnPhase.GAME_OVER
+                        current_phase = TurnPhase.VICTORY_DELAY
+                        start_victory_delay()
                     else:
                         current_phase = TurnPhase.MESSAGE_DISPLAY
 
@@ -826,7 +849,8 @@ def main():
             if current_player.check_victory():
                 name = player_names.get(current_player.index)
                 msg_bar.push(f"{name} ha vinto la partita!")
-                current_phase = TurnPhase.GAME_OVER
+                current_phase = TurnPhase.VICTORY_DELAY
+                start_victory_delay()
             else:
                 # Salva i due bonus separatamente PRIMA di resettare extra_turn_earned.
                 # Quando fai 6 e mangi, sono DUE turni bonus separati.
