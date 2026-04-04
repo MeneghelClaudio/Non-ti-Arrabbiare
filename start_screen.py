@@ -470,7 +470,7 @@ class StartScreen:
             ("Lepre",     "Avanza 1 pedina alla volta, mantiene 2+ fuori"),
             ("Tartaruga", "Porta fuori tutte le pedine, avanza compatta"),
             ("Leone",     "Cacciatore: mangia sempre, poi si avvicina al nemico"),
-            ("Stratega", "AI situazionale: valuta ogni mossa con un punteggio multi-fattore e cambia strategia in base alla fase di gioco"),
+            ("Stratega",  "Valuta ogni mossa con un punteggio multi-fattore e cambia strategia in base alla fase di gioco"),
             ("Casuale",   "Livello scelto casualmente ad ogni partita"),
         ]
         outer = tk.Frame(parent, bg=BORDER_GOLD, padx=1, pady=1)
