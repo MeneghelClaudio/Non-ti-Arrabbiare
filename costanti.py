@@ -45,9 +45,17 @@ PLAYER_COLORS = [
     ( 64,  64, 255),    # 5: blu
     (162,   0, 255),    # 6: viola
     (255,   0, 204),    # 7: fucsia
-    (138,  84,  19),    # 8: marrone
-    ( 97,  97,  97),    # 9: grigio
+    (189, 134,  71),    # 8: marrone
+    (127, 127, 127),    # 9: grigio
+    ( 47, 248, 136),    # 10: verde acqua
 ]
+
+def _rgb_to_hex(rgb):
+    return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+# Colori in formato esadecimale (per UI)
+COLOR_NAMES = ["Rosso", "Arancio", "Giallo", "Verde", "Azzurro", "Blu", "Viola", "Fucsia", "Marrone", "Grigio", "Verde Acqua"]
+PLAYER_COLORS_HEX = {name: _rgb_to_hex(color) for name, color in zip(COLOR_NAMES, PLAYER_COLORS)}
 
 # =============================================================================
 # MODIFICATORI COLORE

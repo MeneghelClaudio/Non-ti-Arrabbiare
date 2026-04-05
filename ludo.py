@@ -16,6 +16,7 @@ import math
 import random
 from enum import Enum, auto
 import pygame
+import ctypes
 
 
 # =============================================================================
@@ -120,8 +121,14 @@ class TurnPhase(Enum):
     VICTORY_DELAY = auto()      # delay animato dopo vittoria, prima di GAME_OVER
     GAME_OVER = auto()          # partita finita, mostra schermata finale
 
+# Game speed multiplier (1.0 = normal)
+GAME_SPEED = 1.0
+
+# Percentuale di ridimensionamento del tabellone (1.0 = 100%)
+BOARD_SCALE = 0.95
+
 # Dimensioni schermo e geometria
-screen_width = screen_height = 900
+screen_width = screen_height = 0
 center_x = center_y = 0.0
 center_radius = cell_size = arm_length = cell_radius = margin = None
 
@@ -247,7 +254,7 @@ def calculate_dimensions():
     arm_length = cell_size * (costanti.CELLS_PER_ARM + 1) + center_radius
     cell_radius = cell_size / 2.3
 
-    scale = 0.95 # Percentuale di ridimensionamento
+    scale = BOARD_SCALE
     center_x = screen_width / 2
     center_y = screen_height / 2
     center_radius *= scale
@@ -483,7 +490,7 @@ def roll_dice():
     dist = math.hypot(screen_width, screen_height) / 2 + size
 
     dice = Dado(center_x, center_y, size=size)
-    dice_roll = random.randint(6, 6)
+    dice_roll = random.randint(1, 6)
     dice.lancia(esito=dice_roll,
                 start_x=center_x + math.cos(angle) * dist,
                 start_y=center_y + math.sin(angle) * dist,
@@ -492,7 +499,7 @@ def roll_dice():
     dice_pending["active"] = True
     dice_pending["timer"] = max(DICE_SOUND_OFFSET, DICE_REVEAL_OFFSET)
     dice_pending["roll"] = dice_roll
-    dice_pending["is_six"] = (dice_roll == 6)
+    dice_pending["is_six"] = dice_pending["is_six"] or (dice_roll == 6)  # preserve previous 6 across bonus turns
     dice_pending["sound_played"] = False
 
 
@@ -557,7 +564,6 @@ def main():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Non t'Arrabbiare")
     try:
-        import ctypes
         ctypes.windll.user32.ShowWindow(pygame.display.get_wm_info()["window"], 3)
     except Exception:
         pass
@@ -575,7 +581,7 @@ def main():
     goto_menu = False
 
     while running:
-        dt = clock.get_time() / 1000.0
+        dt = clock.get_time() / 1000.0 * GAME_SPEED
 
         # ============================================================
         # EVENT HANDLING
@@ -627,10 +633,15 @@ def main():
                     settings_popup.open() if not settings_popup.is_open else settings_popup.close()
                 elif event.key == pygame.K_F11:
                     is_fullscreen = not is_fullscreen
+                    # Modalità fullscreen
                     if is_fullscreen:
                         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    # Modalità windowed
                     else:
-                        screen = pygame.display.set_mode((900, 900), pygame.RESIZABLE)
+                        ctypes.windll.user32.SetProcessDPIAware()
+                        width = ctypes.windll.user32.GetSystemMetrics(0)
+                        height = ctypes.windll.user32.GetSystemMetrics(1)
+                        screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
                     screen_width, screen_height = screen.get_size()
                     calculate_dimensions()
                     adjust_board()
@@ -862,19 +873,22 @@ def main():
             else:
                 # Salva i due bonus separatamente PRIMA di resettare extra_turn_earned.
                 # Quando fai 6 e mangi, sono DUE turni bonus separati.
-                was_six = (dice_roll == 6)
+                was_six = dice_pending.get("is_six", False)
                 bonus = current_player.extra_turn_earned
 
                 if was_six and bonus:
-                    # Due turni bonus: 6 E ha mangiato contemporaneamente → due turni consecutivi.
+                    # Due turni bonus: 6 E ha mangiato → un turno ora, l'altro resta per dopo
                     msg_bar.push(f"{player_names.get(current_player.index)} Due mosse bonus! (6 + ha mangiato)")
-                    current_player.extra_turn_earned = False
+                    # Consuma il bonus del 6, lascia quello del mangia
+                    current_player.extra_turn_earned = True  # resta True per il prossimo
+                    dice_pending["is_six"] = False  # consuma il bonus del 6
                 elif was_six:
-                    # Solo 6 → un turno bonus.
+                    # Solo 6 → un turno bonus
                     msg_bar.push(f"{player_names.get(current_player.index)} Mossa bonus! (ha fatto 6)")
                     current_player.extra_turn_earned = False
+                    dice_pending["is_six"] = False  # consuma il bonus del 6
                 elif bonus:
-                    # Solo ha mangiato → un turno bonus.
+                    # Solo ha mangiato → un turno bonus
                     msg_bar.push(f"{player_names.get(current_player.index)} Mossa bonus! (ha mangiato)")
                     current_player.extra_turn_earned = False
                 else:

@@ -66,12 +66,8 @@ TEXT_DIM   = "#605880"
 
 MEDALS = ["🥇", "🥈", "🥉"]
 
-PLAYER_COLORS = {
-    "Rosso":   "#ff0000", "Arancio": "#ff9500", "Giallo":  "#ffff00",
-    "Verde":   "#00ff00", "Azzurro": "#00f7ff", "Blu":     "#4040ff",
-    "Viola":   "#a200ff", "Fucsia":  "#ff00cc", "Marrone": "#8a5413",
-    "Grigio":  "#616161",
-}
+# Colori importati da costanti.py
+from costanti import PLAYER_COLORS_HEX as PLAYER_COLORS
 
 def darken(h, f=0.7):
     r,g,b = int(h[1:3],16),int(h[3:5],16),int(h[5:7],16)

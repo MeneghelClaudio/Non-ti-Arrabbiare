@@ -52,19 +52,8 @@ TEXT_Y     = "#f0d060"    # giallo oro titoli
 TEXT_M     = "#8880a8"
 TEXT_DIM   = "#605880"
 
-PLAYER_COLORS = {
-    "Rosso":    "#ff0000",
-    "Arancio":  "#ff9500",
-    "Giallo":   "#ffff00",
-    "Verde":    "#00ff00",
-    "Azzurro":  "#00f7ff",
-    "Blu":      "#4040ff",
-    "Viola":    "#a200ff",
-    "Fucsia":   "#ff00cc",
-    "Marrone":  "#8a5413",
-    "Grigio":   "#616161",
-}
-COLOR_NAMES = list(PLAYER_COLORS.keys())
+# Colori importati da costanti.py
+from costanti import PLAYER_COLORS_HEX as PLAYER_COLORS, COLOR_NAMES
 BOT_LEVELS  = ["Scimmia", "Lepre", "Tartaruga", "Leone", "Stratega", "Casuale"]
 _REAL_LEVELS = [l for l in BOT_LEVELS if l != "Casuale"]
 
