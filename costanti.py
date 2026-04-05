@@ -81,3 +81,15 @@ SHADOW = (80, 80, 80)
 # Offset relativi per posizionare le 4 celle slot all'interno della casa
 # (usati per calcolare le posizioni dei 4 slot rispetto al centro casa)
 HOME_OFFSETS = [(-0.3, -0.3), (0.3, -0.3), (-0.3, 0.3), (0.3, 0.3)]
+
+# =============================================================================
+# AI EMOJI
+# =============================================================================
+
+AI_EMOJI = {
+    'Scimmia': '(🐒)',
+    'Lepre': '(🐇)',
+    'Tartaruga': '(🐢)',
+    'Leone': '(🦁)',
+    'Stratega': '(🧠)',
+}

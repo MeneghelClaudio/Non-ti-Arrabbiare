@@ -16,7 +16,7 @@ import math
 import json
 import os
 import pygame
-from costanti import PLAYER_COLORS, NUM_PLAYERS, PEDINE_PER_PLAYER
+from costanti import PLAYER_COLORS, NUM_PLAYERS, PEDINE_PER_PLAYER, AI_EMOJI
 
 
 # =============================================================================
@@ -446,10 +446,6 @@ class Leaderboard:
                 name = name[:max_chars - 1] + "."
             name_c = _COLOR["white"] if is_current else _COLOR["text_hi"]
 
-            AI_EMOJI = {
-                'Scimmia': '(🐒)', 'Lepre': '(🐇)', 'Tartaruga': '(🐢)',
-                'Leone': '(🦁)', 'Stratega': '(🧠)',
-            }
             if getattr(player, 'is_bot', False):
                 # Bot: nome + emoji livello AI
                 ai_level = getattr(player, 'ai_level', '')

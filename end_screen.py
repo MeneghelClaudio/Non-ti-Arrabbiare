@@ -67,7 +67,7 @@ TEXT_DIM   = "#605880"
 MEDALS = ["🥇", "🥈", "🥉"]
 
 # Colori importati da costanti.py
-from costanti import PLAYER_COLORS_HEX as PLAYER_COLORS
+from costanti import PLAYER_COLORS_HEX as PLAYER_COLORS, AI_EMOJI
 
 def darken(h, f=0.7):
     r,g,b = int(h[1:3],16),int(h[3:5],16),int(h[5:7],16)
@@ -375,6 +375,15 @@ class EndScreen:
                  fg=fg_podio,
                  bg=bg_row, anchor="w"
                  ).pack(side="left", fill="both", expand=True)
+
+        if p.get("bot", False):
+            ai_level = p.get("ai_level", "")
+            emoji = AI_EMOJI.get(ai_level, '(🤖)')
+            tk.Label(name_cell, text=f" {emoji}",
+                     font=("Segoe UI", fs(9)),
+                     fg=fg_podio,
+                     bg=bg_row, anchor="w"
+                     ).pack(side="left", fill="both", expand=True)
 
         # ── Colonna 2: pedine al traguardo (canvas con cerchi uguali) ──────────
         home_cell = tk.Frame(row, bg=bg_row)

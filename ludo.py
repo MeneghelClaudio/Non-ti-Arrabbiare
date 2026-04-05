@@ -226,6 +226,7 @@ def show_end_screen():
             "best_steps": best_steps,
             "turns": p.turns,
             "bot": getattr(p, 'is_bot', False),
+            "ai_level": getattr(p, 'ai_level', ''),
         })
 
     game_data = {
