@@ -1021,3 +1021,46 @@ class SettingsPopup:
         scaled = pygame.transform.smoothscale(popup, (rw, rh))
         scaled.set_alpha(alpha)
         screen.blit(scaled, (rx, ry))
+
+
+# =============================================================================
+# GAME LOGO - Logo in basso a destra nella schermata di gioco
+# =============================================================================
+
+_logo_img = None
+_logo_scaled = None
+_logo_last_scale = None
+
+def draw_game_logo(screen, sw, sh):
+    """Disegna il logo del gioco nell'angolo in basso a destra."""
+    global _logo_img, _logo_scaled, _logo_last_scale
+    
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(base_path, "assets", "images", "Non_ti_Arrabbiare_logo.png")
+    
+    if not os.path.isfile(logo_path):
+        return
+    
+    scale = _hud_scale_fn() if _hud_scale_fn else 1
+    max_h = _scale(150) # dimensione del logo
+    
+    if _logo_img is None:
+        try:
+            _logo_img = pygame.image.load(logo_path).convert_alpha()
+        except Exception:
+            return
+    
+    if _logo_last_scale != scale:
+        w, h = _logo_img.get_size()
+        if h > max_h:
+            new_w = int(w * max_h / h)
+            _logo_scaled = pygame.transform.smoothscale(_logo_img, (new_w, max_h))
+        else:
+            _logo_scaled = _logo_img
+        _logo_last_scale = scale
+    
+    if _logo_scaled:
+        lw, lh = _logo_scaled.get_size()
+        x = sw - lw - _scale(25) # distanza dal bordo destro
+        y = sh - lh - _scale(25) # distanza dal bordo inferiore
+        screen.blit(_logo_scaled, (x, y))

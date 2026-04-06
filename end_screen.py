@@ -106,6 +106,11 @@ class EndScreen:
         self.root.resizable(True, True)
         self.root.minsize(460, 360)
 
+        # Logo del gioco nella finestra dell'applicazione
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "images", "Non_ti_Arrabbiare_logo.ico")
+        if os.path.isfile(logo_path):
+            self.root.iconbitmap(logo_path)
+
         self.scale = 1.0
         self._rebuild_pending = False
         self._last_w = 0
@@ -307,15 +312,34 @@ class EndScreen:
                  ).pack(fill="x", side="top")
 
         inner_btn = tk.Frame(btn_frame, bg=BG_PANEL,
-                             padx=s(16), pady=s(10))
+                             padx=s(16), pady=s(4))
         inner_btn.pack(fill="x")
         inner_btn.grid_columnconfigure(0, weight=1)
-        inner_btn.grid_columnconfigure(1, weight=1)
+        inner_btn.grid_columnconfigure(1, weight=0)
+        inner_btn.grid_columnconfigure(2, weight=1)
+
+        # Logo al centro
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "images", "Non_ti_Arrabbiare_logo.png")
+        if os.path.isfile(logo_path):
+            try:
+                from PIL import Image, ImageTk
+                logo_img = Image.open(logo_path)
+                w_img, h_img = logo_img.size
+                max_h = s(70) # dimensione del logo
+                if h_img > max_h:
+                    scale = max_h / h_img
+                    logo_img = logo_img.resize((int(w_img * scale), int(h_img * scale)), Image.LANCZOS)
+                logo_tk = ImageTk.PhotoImage(logo_img)
+                logo_label = tk.Label(inner_btn, image=logo_tk, bg=BG_PANEL)
+                logo_label.image = logo_tk
+                logo_label.grid(row=0, column=1, padx=s(10))
+            except Exception:
+                pass
 
         self._mk_btn(inner_btn, "🔄  NUOVA PARTITA",
                      self._new_game, ACCENT_BLUE, 0, "w")
         self._mk_btn(inner_btn, "✖  ESCI",
-                     self._exit, ACCENT_RED, 1, "e")
+                     self._exit, ACCENT_RED, 2, "e")
 
     def _result_row(self, tbl, p, idx, row_i):
         s = self._s; fs = self._fs; rh = self._rh()
@@ -480,12 +504,12 @@ class EndScreen:
         sw  = self.root.winfo_screenwidth()
         sh  = self.root.winfo_screenheight()
         w   = min(560, sw - 80)
-        h   = min(280 + n * 36, sh - 80)
+        h   = min(320 + n * 36, sh - 80)
         self._last_w = w
         self.root.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
 
 
-# ── Entry point (test standalone) ─────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # Richiede il file di configurazione come argomento
     if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):

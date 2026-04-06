@@ -173,6 +173,11 @@ class StartScreen:
         self.root.resizable(True, True)
         self.root.minsize(MIN_W, MIN_H)
 
+        # Logo del gioco nella finestra dell'applicazione
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "images", "Non_ti_Arrabbiare_logo.ico")
+        if os.path.isfile(logo_path):
+            self.root.iconbitmap(logo_path)
+
         self.scale = 1.0
         self._rebuild_pending = False
         self._last_canvas_w   = 0      # anti-flash: traccia ultima larghezza
@@ -590,10 +595,29 @@ class StartScreen:
                  ).grid(row=2, column=0, sticky="ew")
 
         bf = tk.Frame(self.root, bg=BG_PANEL,
-                      pady=s(10), padx=s(SIDE_PAD))
+                      pady=s(4), padx=s(SIDE_PAD))
         bf.grid(row=2, column=0, sticky="ew")
         bf.grid_columnconfigure(0, weight=1)
-        bf.grid_columnconfigure(1, weight=1)
+        bf.grid_columnconfigure(1, weight=0)
+        bf.grid_columnconfigure(2, weight=1)
+
+        # Logo al centro
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "images", "Non_ti_Arrabbiare_logo.png")
+        if os.path.isfile(logo_path):
+            try:
+                from PIL import Image, ImageTk
+                logo_img = Image.open(logo_path)
+                w_img, h_img = logo_img.size
+                max_h = s(70) # dimensione del logo
+                if h_img > max_h:
+                    scale = max_h / h_img
+                    logo_img = logo_img.resize((int(w_img * scale), int(h_img * scale)), Image.LANCZOS)
+                logo_tk = ImageTk.PhotoImage(logo_img)
+                logo_label = tk.Label(bf, image=logo_tk, bg=BG_PANEL)
+                logo_label.image = logo_tk
+                logo_label.grid(row=0, column=1, padx=s(10))
+            except Exception:
+                pass
 
         def mk_btn(parent, text, cmd, bg, col, anchor):
             f = tk.Frame(parent, bg=bg)
@@ -635,7 +659,7 @@ class StartScreen:
         b.bind("<Leave>", lambda e: b.config(bg=ACCENT_BLUE))
 
         mk_btn(bf, "▶  INIZIA LA PARTITA",
-               self._start_game, ACCENT_GRN, 1, "e")
+               self._start_game, ACCENT_GRN, 2, "e")
 
     # ── Spinner ───────────────────────────────────────────────────────────────
     def _spinner(self, parent, var, lo, hi, bg=BG_PANEL):

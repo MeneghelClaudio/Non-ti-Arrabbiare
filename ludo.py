@@ -98,6 +98,7 @@ from hud import (
     ACTION_GOTO_MENU, ACTION_RESET_GAME, ACTION_TOGGLE_MUTE, ACTION_TOGGLE_MESSAGES, ACTION_CLOSE_POPUP,
     ACTION_TOGGLE_MUTE_SFX, ACTION_TOGGLE_MUTE_MUSIC,
     ACTION_END_GAME,
+    draw_game_logo,
 )
 
 import draw as _draw_mod, hud as _hud_mod
@@ -576,6 +577,13 @@ def main():
         player_names.set_names(_names_from_config)
 
     pygame.init()
+    logo_path = os.path.join("assets", "images", "Non_ti_Arrabbiare_logo.png")
+    if os.path.isfile(logo_path):
+        try:
+            icon = pygame.image.load(logo_path)
+            pygame.display.set_icon(icon)
+        except Exception:
+            pass
     ctypes.windll.user32.SetProcessDPIAware()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Non t'Arrabbiare")
@@ -654,6 +662,7 @@ def main():
                         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                     # Modalità windowed
                     else:
+                        os.environ['SDL_VIDEO_CENTERED'] = '1' # centra la finestra nello schermo
                         ctypes.windll.user32.SetProcessDPIAware()
                         width = ctypes.windll.user32.GetSystemMetrics(0)
                         height = ctypes.windll.user32.GetSystemMetrics(1)
@@ -932,6 +941,7 @@ def main():
         toolbar.draw(screen, screen_width)
         msg_bar.draw(screen, screen_width, screen_height)
         settings_popup.draw(screen, screen_width, screen_height)
+        draw_game_logo(screen, screen_width, screen_height)
 
         pygame.display.flip()
         clock.tick(60)
