@@ -101,7 +101,7 @@ class ColorMenuButton(tk.Frame):
         dot = max(12, int(self.row_h * 0.50))
         self.preview = tk.Canvas(inner, width=dot, height=dot,
                                  bg=bg, highlightthickness=0, cursor="hand2")
-        self.preview.pack(side="left", padx=(0, 5))
+        self.preview.pack(side="left", padx=(0, 15))
         self._draw_dot(dot)
 
         self.mb = tk.Menubutton(inner, textvariable=self.color_var,
@@ -112,7 +112,8 @@ class ColorMenuButton(tk.Frame):
                                 activeforeground="#ffffff",
                                 highlightthickness=1,
                                 highlightbackground="#000000",
-                                cursor="hand2", bd=1)
+                                cursor="hand2", bd=1,
+                                width=10)
         self.mb.pack(side="left")
 
         self.menu = tk.Menu(self.mb, tearoff=False,
@@ -183,6 +184,9 @@ class StartScreen:
         self._last_canvas_w   = 0      # anti-flash: traccia ultima larghezza
 
         _setup_click_interceptor(self.root)
+
+        # Perdere focus cliccando fuori dagli input
+        self.root.bind("<Button-1>", self._on_click_outside)
 
         self.num_players = tk.IntVar(value=2)
         self.num_pawns   = tk.IntVar(value=4)
@@ -533,16 +537,60 @@ class StartScreen:
             except Exception:
                 pass
 
+        # Entry nome con placeholder e icona matita
+        bot_color = "#ff9090"  # rosso chiaro quando scrivi
+        bot_placeholder = "#884444"  # rosso più scuro per placeholder bot
+        fg_name = bot_color if is_bot_default else TEXT_W
+        
         # Entry nome
         e = tk.Entry(nc, textvariable=self.p_name[idx],
                      font=("Segoe UI", fs(9), "bold"),
                      bg=bg_row, fg=fg_name,
                      insertbackground=TEXT_W,
-                     relief="flat", bd=0)
+                     relief="flat", bd=0,
+                     highlightthickness=1, highlightcolor=bg_row, highlightbackground=bg_row)
         e.place(x=s(22), rely=0.5, anchor="w",
-                relwidth=1.0, width=-s(26))
-        e.bind("<Key>", lambda event, i=idx: self.p_name_custom.__setitem__(i, True))
-
+                relwidth=1.0, width=-s(65))
+        
+        # Penna a destra del campo (bianca per giocatori, rossa per bot)
+        pencil_color = TEXT_W if not is_bot_default else bot_color
+        pencil = tk.Label(nc, text="🖊️", font=("Segoe UI", fs(9)),
+                         bg=bg_row, fg=pencil_color, cursor="hand2")
+        pencil.place(relx=1.0, x=-s(0), rely=0.5, anchor="e")
+        
+        # Colore del bordo in base a bot/giocatore
+        focus_color = bot_color if is_bot_default else TEXT_W
+        
+        # Clicca sulla penna per selezionare il testo e mostrare bordo colorato
+        def _on_pencil_click(event):
+            e.focus_set()
+            e.selection_range(0, "end")
+            e.icursor("end")
+            e.config(highlightcolor=focus_color)
+        
+        pencil.bind("<Button-1>", _on_pencil_click)
+        
+        # Quando l'utente scrive, marca come personalizzato
+        def _on_key(event):
+            self.p_name_custom[idx] = True
+            e.config(fg=fg_name)
+        
+        def _on_focus(event):
+            e.config(highlightcolor=focus_color)
+            e.selection_range(0, "end")
+            e.icursor("end")
+        
+        def _on_focus_out(event):
+            e.config(highlightcolor=bg_row)
+        
+        e.bind("<Key>", _on_key)
+        e.bind("<FocusIn>", _on_focus)
+        e.bind("<FocusOut>", _on_focus_out)
+        
+        # Mostra nome in grigio/rosso scuro se non modificato (placeholder)
+        if not self.p_name_custom[idx]:
+            e.config(fg=bot_placeholder if is_bot_default else TEXT_DIM)
+        
         # ── COLORE ────────────────────────────────────────────────────────────
         cc = cell(1)
         cmb = ColorMenuButton(
@@ -785,6 +833,13 @@ class StartScreen:
         self.adv_btn_var.set("▲ Nascondi avanzate"
                              if self.advanced_visible else "⚙  Opzioni avanzate")
         self._build_all()
+
+    def _on_click_outside(self, event):
+        # Trova il widget sotto il mouse
+        widget = event.widget
+        # Se non è un Entry, perdi il focus
+        if not isinstance(widget, (tk.Entry, tk.Label)):
+            self.root.focus_set()
 
     def _on_resize(self, e=None):
         if e and e.widget is not self.root:
