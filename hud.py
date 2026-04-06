@@ -20,6 +20,24 @@ from costanti import PLAYER_COLORS, NUM_PLAYERS, PEDINE_PER_PLAYER, AI_EMOJI
 
 
 # =============================================================================
+# SCALING
+# =============================================================================
+
+_hud_scale_fn = None
+
+def set_hud_scale_ref(fn):
+    """Imposta la funzione che restituisce il fattore di scala corrente."""
+    global _hud_scale_fn
+    _hud_scale_fn = fn
+
+def _scale(v):
+    """Applica il fattore di scala al valore dato."""
+    if _hud_scale_fn is None:
+        return v
+    return int(v * _hud_scale_fn())
+
+
+# =============================================================================
 # PALETTE UI
 # =============================================================================
 
@@ -169,12 +187,15 @@ class TurnBanner:
         self._last_player = -1
         self._anim_t = 0.0
         self._ANIM_DUR = 0.35
+        self._last_scale = 1.0
 
     def _ensure_fonts(self):
-        if self._font_lbl is None:
-            self._font_lbl = pygame.font.SysFont("Consolas", 13, bold=False)
-            self._font_name = pygame.font.SysFont("Consolas", 20, bold=True)
-            self._font_hint = pygame.font.SysFont("Consolas", 12)
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font_lbl is None or self._last_scale != scale:
+            self._last_scale = scale
+            self._font_lbl = pygame.font.SysFont("Consolas", max(8, int(13 * scale)), bold=False)
+            self._font_name = pygame.font.SysFont("Consolas", max(10, int(20 * scale)), bold=True)
+            self._font_hint = pygame.font.SysFont("Consolas", max(8, int(12 * scale)))
 
     def notify_new_turn(self, player_index):
         """Avvia l'animazione quando cambia il giocatore."""
@@ -194,16 +215,16 @@ class TurnBanner:
         color = PLAYER_COLORS[current_player]
         
         # Dimensioni banner
-        w, h = 260, 64
-        target_x = 14
-        target_y = 14
+        w, h = _scale(260), _scale(64)
+        target_x = _scale(14)
+        target_y = _scale(14)
         
         # Animazione slide da sinistra (entra da fuori schermo)
         t_ease = 1 - (1 - self._anim_t) ** 3
         off_x = int(-w * (1 - t_ease))
         x = target_x + off_x
         y = target_y
-        r = 14
+        r = _scale(14)
 
         # Creazione superficie con alpha
         surf = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -215,30 +236,30 @@ class TurnBanner:
                    border_color=(60, 60, 80), border_w=1)
 
         # Striscia colore giocatore (sinistra del banner)
-        stripe_w = 5
-        stripe = pygame.Surface((stripe_w, h - 24), pygame.SRCALPHA)
-        for row in range(h - 24):
-            t_row = row / max(h - 25, 1)
+        stripe_w = _scale(5)
+        stripe = pygame.Surface((stripe_w, h - _scale(24)), pygame.SRCALPHA)
+        for row in range(h - _scale(24)):
+            t_row = row / max(h - _scale(25), 1)
             # Gradiente dalla tinta giocatore verso scuro
             c = color_blend(color, color_adjust(color, -40), t_row)
             pygame.draw.line(stripe, (*c, 230), (0, row), (stripe_w - 1, row))
-        surf.blit(stripe, (1, 12))
+        surf.blit(stripe, (1, _scale(12)))
 
         # Label "TURNO" + pallino colore
         lbl = self._font_lbl.render("TURNO", True, _COLOR["text_lo"])
-        surf.blit(lbl, (14, 7))
+        surf.blit(lbl, (_scale(14), _scale(7)))
 
-        dot_x = 14 + lbl.get_width() + 10
-        draw_player_dot(surf, dot_x, 7 + lbl.get_height() // 2, 7, color)
+        dot_x = _scale(14) + lbl.get_width() + _scale(10)
+        draw_player_dot(surf, dot_x, _scale(7) + lbl.get_height() // 2, _scale(7), color)
 
         # Nome giocatore grande
         name_surf = self._font_name.render(player_name, True, _COLOR["text_hi"])
-        surf.blit(name_surf, (14, 22))
+        surf.blit(name_surf, (_scale(14), _scale(22)))
 
         # Messaggio fase di gioco (sotto, con colore giocatore)
         phase_str = phase_label(phase_name)
         hint = self._font_hint.render(phase_str, True, (*color[:3], 200))
-        surf.blit(hint, (14, h - hint.get_height() - 6))
+        surf.blit(hint, (_scale(14), h - hint.get_height() - _scale(6)))
 
         # Effetto vetro in cima (highlight)
         glass = pygame.Surface((w, h // 2), pygame.SRCALPHA)
@@ -263,11 +284,14 @@ class DiceDisplay:
         self._font_lbl = None
         self._anim_t = 1.0
         self._last_roll = 0
+        self._last_scale = 1.0
 
     def _ensure_fonts(self):
-        if self._font_big is None:
-            self._font_big = pygame.font.SysFont("Consolas", 36, bold=True)
-            self._font_lbl = pygame.font.SysFont("Consolas", 12)
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font_big is None or self._last_scale != scale:
+            self._last_scale = scale
+            self._font_big = pygame.font.SysFont("Consolas", max(12, int(36 * scale)), bold=True)
+            self._font_lbl = pygame.font.SysFont("Consolas", max(8, int(12 * scale)))
 
     def notify_roll(self, value):
         """Avvia l'animazione quando viene lanciato il dado."""
@@ -290,9 +314,9 @@ class DiceDisplay:
         dice_roll = self._last_roll
 
         # Posizione: sopra la toolbar, angolo destro
-        TOOLBAR_BOTTOM = 68
-        w, h = 78, 78
-        x = sw - w - 14
+        TOOLBAR_BOTTOM = _scale(68)
+        w, h = _scale(78), _scale(78)
+        x = sw - w - _scale(14)
         y = TOOLBAR_BOTTOM
 
         # Animazione scale (bounce iniziale)
@@ -304,7 +328,7 @@ class DiceDisplay:
 
         # Creazione superficie ridimensionata
         surf = pygame.Surface((rw, rh), pygame.SRCALPHA)
-        r = 12
+        r = _scale(12)
 
         # Pannello chiaro (diverso dal solito scuro)
         draw_panel(surf, pygame.Rect(0, 0, rw, rh), r,
@@ -313,7 +337,7 @@ class DiceDisplay:
                    border_color=(80, 80, 80), border_w=2)
 
         # Numero del dado (rosso per 6)
-        font_size = max(8, int(36 * scale))
+        font_size = max(8, int(_scale(36) * scale))
         font_scaled = pygame.font.SysFont("Consolas", font_size, bold=True)
         num_s = font_scaled.render(str(dice_roll), True,
                                   (200, 30, 30) if dice_roll == 6 else (20, 20, 20))
@@ -342,14 +366,16 @@ class Leaderboard:
         self._font_title = None
         self._font_hdr = None
         self._font_row = None
+        self._last_scale = 1.0
 
     def _ensure_fonts(self):
-        if self._font_title is None:
-            self._font_title = pygame.font.SysFont("Consolas", 16, bold=True)
-            self._font_row = pygame.font.SysFont("Consolas", 15, bold=False)
-            # Prova font con emoji (caduta su Windows)
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font_title is None or self._last_scale != scale:
+            self._last_scale = scale
+            self._font_title = pygame.font.SysFont("Consolas", max(10, int(16 * scale)), bold=True)
+            self._font_row = pygame.font.SysFont("Consolas", max(9, int(15 * scale)), bold=False)
             for name in ("Segoe UI Emoji", "Segoe UI", "Arial Unicode MS", "Consolas"):
-                f = pygame.font.SysFont(name, 12)
+                f = pygame.font.SysFont(name, max(8, int(12 * scale)))
                 if f:
                     self._font_hdr = f
                     break
@@ -361,23 +387,23 @@ class Leaderboard:
         ranked = sorted(players, key=lambda p: p.ranking_score(), reverse=True)
 
         # Layout: dimensioni e posizioni colonne
-        row_h = 34
-        pad = 12
-        w = 248
-        COL_POS = 8
-        COL_DOT = 30
-        COL_NAME = 60
-        COL_FINAL = 196
-        COL_HOME = 222
-        DOT_R = 9
+        row_h = _scale(34)
+        pad = _scale(12)
+        w = _scale(248)
+        COL_POS = _scale(8)
+        COL_DOT = _scale(30)
+        COL_NAME = _scale(60)
+        COL_FINAL = _scale(196)
+        COL_HOME = _scale(222)
+        DOT_R = _scale(9)
 
         # Calcolo altezza totale e posizione (centrato verticalmente)
-        title_h = 32
-        hdr_h = 22
+        title_h = _scale(32)
+        hdr_h = _scale(22)
         h = title_h + hdr_h + len(ranked) * row_h + pad
-        x = 14
-        y = max(sh // 2 - h // 2, 90)
-        r = 14
+        x = _scale(14)
+        y = max(sh // 2 - h // 2, _scale(90))
+        r = _scale(14)
 
         # Pannello principale scuro
         surf = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -387,21 +413,21 @@ class Leaderboard:
                    border_color=(60, 60, 85), border_w=1)
 
         # Barra oro in cima
-        k = 20
+        k = _scale(20)
         pygame.draw.rect(surf, (*_COLOR["gold"], 220),
                         pygame.Rect((k / 2), 0, (w - k), 4), border_radius=r)
 
         # Titolo "CLASSIFICA"
         title = self._font_title.render("CLASSIFICA", True, _COLOR["gold"])
-        surf.blit(title, (pad, 10))
+        surf.blit(title, (pad, _scale(10)))
 
         # Separatore sotto il titolo
-        sep_y = title_h - 4
+        sep_y = title_h - _scale(4)
         pygame.draw.line(surf, (*_COLOR["border"][:3], 140),
                         (pad, sep_y), (w - pad, sep_y), 1)
 
         # Header colonne
-        hdr_y = title_h + 2
+        hdr_y = title_h + _scale(2)
         for txt, hx in [("#", COL_POS), ("GIOCATORE", COL_NAME),
                          ("🏆", COL_FINAL), ("🏠", COL_HOME)]:
             s = self._font_hdr.render(txt, True, _COLOR["text_lo"])
@@ -409,7 +435,7 @@ class Leaderboard:
 
         # Separatore sotto header
         pygame.draw.line(surf, (*_COLOR["border"][:3], 90),
-                        (pad, hdr_y + 16), (w - pad, hdr_y + 16), 1)
+                        (pad, hdr_y + _scale(16)), (w - pad, hdr_y + _scale(16)), 1)
 
         # Righe giocatori
         for i, player in enumerate(ranked):
@@ -436,7 +462,7 @@ class Leaderboard:
             surf.blit(ps, (COL_POS, ry + (row_h - ps.get_height()) // 2))
 
             # Pallino colore giocatore
-            dot_r = DOT_R + 2 if is_current else DOT_R
+            dot_r = _scale(DOT_R + 2) if is_current else _scale(DOT_R)
             draw_player_dot(surf, COL_DOT + dot_r, ry + row_h // 2, dot_r, PLAYER_COLORS[pid])
 
             # Nome giocatore + emoji AI per bot
@@ -453,7 +479,7 @@ class Leaderboard:
                 emoji_surf = self._font_hdr.render(emoji, True, name_c)
                 name_surf = self._font_row.render(name, True, name_c)
                 surf.blit(name_surf, (COL_NAME, ry + (row_h - name_surf.get_height()) // 2))
-                surf.blit(emoji_surf, (COL_NAME + name_surf.get_width() + 4,
+                surf.blit(emoji_surf, (COL_NAME + name_surf.get_width() + _scale(4),
                                       ry + (row_h - emoji_surf.get_height()) // 2))
             else:
                 # Giocatore umano: solo nome
@@ -510,11 +536,14 @@ class MessageBar:
         self._state = "idle"
         self._t = 0.0
         self._enabled = True
+        self._last_scale = 1.0
 
     def _ensure_fonts(self):
-        if self._font is None:
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font is None or self._last_scale != scale:
+            self._last_scale = scale
             for name in ("Segoe UI Emoji", "Segoe UI", "Arial Unicode MS", "Consolas"):
-                self._font = pygame.font.SysFont(name, 16, bold=True)
+                self._font = pygame.font.SysFont(name, max(10, int(16 * scale)), bold=True)
                 if self._font:
                     break
 
@@ -571,11 +600,11 @@ class MessageBar:
             return
 
         # Dimensioni e posizione
-        w = min(sw - 80, 620)
-        h = 44
+        w = min(sw - _scale(80), _scale(620))
+        h = _scale(44)
         cx = sw // 2
-        base_y = sh - h - 16
-        r = 10
+        base_y = sh - h - _scale(16)
+        r = _scale(10)
 
         # Calcolo offset e alpha in base allo stato
         if self._state == "slide_in":
@@ -642,6 +671,7 @@ class Toolbar:
     def __init__(self):
         self._font_icon = None
         self._font_tip = None
+        self._last_scale = 1.0
         self._buttons = [
             _Button("⚙", _COLOR["gray_btn"], _COLOR["gray_hi"], ACTION_SETTINGS, "Impostazioni"),
             _Button("↺", _COLOR["gray_btn"], _COLOR["gray_hi"], ACTION_RESET, "Reset partita"),
@@ -649,9 +679,11 @@ class Toolbar:
         ]
 
     def _ensure_fonts(self):
-        if self._font_icon is None:
-            self._font_icon = pygame.font.SysFont("Segoe UI Emoji", 18)
-            self._font_tip = pygame.font.SysFont("Consolas", 11)
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font_icon is None or self._last_scale != scale:
+            self._last_scale = scale
+            self._font_icon = pygame.font.SysFont("Segoe UI Emoji", max(10, int(18 * scale)))
+            self._font_tip = pygame.font.SysFont("Consolas", max(7, int(11 * scale)))
 
     def handle_event(self, event):
         # Click sinistro: restituisce l'azione del bottone premuto
@@ -668,20 +700,20 @@ class Toolbar:
     def draw(self, screen, sw):
         self._ensure_fonts()
 
-        bs = self._BTN_SIZE
-        gap = self._GAP
+        bs = _scale(34)
+        gap = _scale(6)
         n = len(self._buttons)
         
         # Calcolo posizione (angolo alto a destra)
         total_w = n * bs + (n - 1) * gap
-        start_x = sw - total_w - 14
-        y = 14
+        start_x = sw - total_w - _scale(14)
+        y = _scale(14)
 
         # Pannello di sfondo toolbar
         panel_w = total_w + gap * 2
         panel_h = bs + gap * 2
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        draw_panel(panel, pygame.Rect(0, 0, panel_w, panel_h), 10,
+        draw_panel(panel, pygame.Rect(0, 0, panel_w, panel_h), _scale(10),
                    border_color=(60, 60, 80), border_w=1)
         screen.blit(panel, (start_x - gap, y - gap))
 
@@ -695,14 +727,14 @@ class Toolbar:
             
             # Superficie bottone con gradiente
             btn_surf = pygame.Surface((bs, bs), pygame.SRCALPHA)
-            draw_panel(btn_surf, pygame.Rect(0, 0, bs, bs), 8,
+            draw_panel(btn_surf, pygame.Rect(0, 0, bs, bs), _scale(8),
                        c_top=color_adjust(c, +15), c_bot=color_adjust(c, -15),
                        a_top=240, a_bot=240,
                        border_color=(0, 0, 0), border_w=1)
 
             # Effetto vetro in cima
             glass = pygame.Surface((bs, bs // 2), pygame.SRCALPHA)
-            gradient_vertical(glass, pygame.Rect(0, 0, bs, bs // 2), 8,
+            gradient_vertical(glass, pygame.Rect(0, 0, bs, bs // 2), _scale(8),
                               (255, 255, 255), (255, 255, 255), 30, 2)
             btn_surf.blit(glass, (0, 0))
 
@@ -715,14 +747,14 @@ class Toolbar:
             # Tooltip quando in hover
             if btn.hovered and btn.tip:
                 tip = self._font_tip.render(btn.tip, True, (220, 220, 220))
-                tw, th = tip.get_width() + 10, tip.get_height() + 6
+                tw, th = tip.get_width() + _scale(10), tip.get_height() + _scale(6)
                 tx = bx + bs // 2 - tw // 2
-                ty = y + bs + 4
+                ty = y + bs + _scale(4)
                 ts = pygame.Surface((tw, th), pygame.SRCALPHA)
                 ts.fill((20, 20, 28, 210))
                 pygame.draw.rect(ts, (80, 80, 100, 180),
-                                pygame.Rect(0, 0, tw, th), 1, border_radius=4)
-                ts.blit(tip, (5, 3))
+                                pygame.Rect(0, 0, tw, th), 1, border_radius=_scale(4))
+                ts.blit(tip, (_scale(5), _scale(3)))
                 screen.blit(ts, (tx, ty))
 
 
@@ -768,11 +800,11 @@ class SettingsPopup:
         self._font_t = None
         self._font_b = None
         self._font_s = None
+        self._last_scale = 1.0
         self._buttons = []
         self._rebuild_buttons()
 
     def _rebuild_buttons(self, fullscreen=True):
-        # Labels che cambiano in base allo stato (mute on/off)
         mute_label = "🔇 Tutto: OFF" if self._muted else "🔊 Tutto: ON"
         sfx_label = "🔕 SFX: OFF" if self._muted_sfx else "🔔 SFX: ON"
         music_label = "⏹ Musica: OFF" if self._muted_music else "▶ Musica: ON"
@@ -791,10 +823,12 @@ class SettingsPopup:
         ]
 
     def _ensure_fonts(self):
-        if self._font_t is None:
-            self._font_t = pygame.font.SysFont("Consolas", 20, bold=True)
-            self._font_b = pygame.font.SysFont("Segoe UI Emoji", 15, bold=True)
-            self._font_s = pygame.font.SysFont("Consolas", 11)
+        scale = _hud_scale_fn() if _hud_scale_fn else 1.0
+        if self._font_t is None or self._last_scale != scale:
+            self._last_scale = scale
+            self._font_t = pygame.font.SysFont("Consolas", max(12, int(20 * scale)), bold=True)
+            self._font_b = pygame.font.SysFont("Segoe UI Emoji", max(9, int(15 * scale)), bold=True)
+            self._font_s = pygame.font.SysFont("Consolas", max(7, int(11 * scale)))
 
     @property
     def is_open(self):
@@ -878,7 +912,7 @@ class SettingsPopup:
         alpha = int(255 * t_ease)
 
         # Dimensioni base popup
-        pw, ph = 300, 430
+        pw, ph = _scale(300), _scale(430)
         px = sw // 2 - pw // 2
         py = sh // 2 - ph // 2
 
@@ -895,7 +929,7 @@ class SettingsPopup:
 
         # Popup principale
         popup = pygame.Surface((pw, ph), pygame.SRCALPHA)
-        r = 18
+        r = _scale(18)
 
         draw_panel(popup, pygame.Rect(0, 0, pw, ph), r,
                    c_top=(22, 22, 30), c_bot=(38, 38, 52),
@@ -903,7 +937,7 @@ class SettingsPopup:
                    border_color=(75, 75, 100), border_w=2)
 
         # Effetto vetro in cima
-        glass_h = min(ph // 3, 60)
+        glass_h = min(ph // 3, _scale(60))
         glass = pygame.Surface((pw, glass_h), pygame.SRCALPHA)
         gradient_vertical(glass, pygame.Rect(0, 0, pw, glass_h), 0,
                           (255, 255, 255), (255, 255, 255), 18, 0)
@@ -916,18 +950,18 @@ class SettingsPopup:
 
         # Titolo "IMPOSTAZIONI"
         title = self._font_t.render("IMPOSTAZIONI", True, _COLOR["text_hi"])
-        popup.blit(title, (pw // 2 - title.get_width() // 2, 14))
+        popup.blit(title, (pw // 2 - title.get_width() // 2, _scale(14)))
         pygame.draw.line(popup, (*_COLOR["border"][:3], 140),
-                        (16, 40), (pw - 16, 40), 1)
+                        (_scale(16), _scale(40)), (pw - _scale(16), _scale(40)), 1)
 
         # Layout bottoni
         # I bottoni SFX e MUSICA sono messi affiancati (paired layout)
         PAIRED = {ACTION_TOGGLE_MUTE_SFX, ACTION_TOGGLE_MUTE_MUSIC}
-        bh = 40
-        b_gap = 10
-        b_w = pw - 48
-        b_start_y = 58
-        bx_base = 24
+        bh = _scale(40)
+        b_gap = _scale(10)
+        b_w = pw - _scale(48)
+        b_start_y = _scale(58)
+        bx_base = _scale(24)
 
         row_y = b_start_y
         skip_next = False
@@ -950,12 +984,12 @@ class SettingsPopup:
                     b.rect = pygame.Rect(px + bx_col, py + row_y, half_w, bh)
                     c = b.hover if b.hovered else b.color
                     bs = pygame.Surface((half_w, bh), pygame.SRCALPHA)
-                    draw_panel(bs, pygame.Rect(0, 0, half_w, bh), 10,
+                    draw_panel(bs, pygame.Rect(0, 0, half_w, bh), _scale(10),
                                c_top=color_adjust(c, +12), c_bot=color_adjust(c, -8),
                                a_top=240, a_bot=235,
                                border_color=(60, 60, 80), border_w=1)
                     gh = pygame.Surface((half_w, bh // 2), pygame.SRCALPHA)
-                    gradient_vertical(gh, pygame.Rect(0, 0, half_w, bh // 2), 10,
+                    gradient_vertical(gh, pygame.Rect(0, 0, half_w, bh // 2), _scale(10),
                                       (255, 255, 255), (255, 255, 255), 28, 2)
                     bs.blit(gh, (0, 0))
                     lbl = self._font_b.render(b.label, True, (225, 225, 225))
@@ -968,12 +1002,12 @@ class SettingsPopup:
                 btn.rect = pygame.Rect(px + bx_base, py + row_y, b_w, bh)
                 c = btn.hover if btn.hovered else btn.color
                 bs = pygame.Surface((b_w, bh), pygame.SRCALPHA)
-                draw_panel(bs, pygame.Rect(0, 0, b_w, bh), 10,
+                draw_panel(bs, pygame.Rect(0, 0, b_w, bh), _scale(10),
                            c_top=color_adjust(c, +12), c_bot=color_adjust(c, -8),
                            a_top=240, a_bot=235,
                            border_color=(60, 60, 80), border_w=1)
                 gh = pygame.Surface((b_w, bh // 2), pygame.SRCALPHA)
-                gradient_vertical(gh, pygame.Rect(0, 0, b_w, bh // 2), 10,
+                gradient_vertical(gh, pygame.Rect(0, 0, b_w, bh // 2), _scale(10),
                                  (255, 255, 255), (255, 255, 255), 28, 2)
                 bs.blit(gh, (0, 0))
                 lbl = self._font_b.render(btn.label, True, (225, 225, 225))

@@ -17,6 +17,7 @@ import random
 from enum import Enum, auto
 import pygame
 import ctypes
+import time
 
 
 # =============================================================================
@@ -102,6 +103,7 @@ from hud import (
 import draw as _draw_mod, hud as _hud_mod
 _draw_mod.NUM_PLAYERS = costanti.NUM_PLAYERS
 _draw_mod.PLAYER_COLORS = costanti.PLAYER_COLORS
+_hud_mod.set_hud_scale_ref(lambda: hud_scale)
 _draw_mod.PEDINE_PER_PLAYER = costanti.PEDINE_PER_PLAYER
 _hud_mod.NUM_PLAYERS = costanti.NUM_PLAYERS
 _hud_mod.PLAYER_COLORS = costanti.PLAYER_COLORS
@@ -129,6 +131,7 @@ BOARD_SCALE = 0.95
 
 # Dimensioni schermo e geometria
 screen_width = screen_height = 0
+hud_scale = 1.0
 center_x = center_y = 0.0
 center_radius = cell_size = arm_length = cell_radius = margin = None
 
@@ -171,8 +174,10 @@ VICTORY_DELAY = 2.5
 victory_delay_active = False
 victory_hold_t = 0.0
 
-# Fullscreen
+# Fullscreen + Windowed
 is_fullscreen = True
+windowed_margin_width = 125
+windowed_margin_height = 250
 
 # HUD elements
 player_names = turn_banner = dice_display = leaderboard = None
@@ -245,8 +250,17 @@ def show_end_screen():
 
 def calculate_dimensions():
     """Calcola dimensioni del tabellone in base alla risoluzione."""
-    global center_x, center_y, center_radius, cell_size, arm_length, cell_radius, margin
+    global center_x, center_y, center_radius, cell_size, arm_length, cell_radius, margin, hud_scale
+    
     n = costanti.NUM_PLAYERS
+    
+    # Calcolo hud_scale in base alle dimensioni correnti (come il tabellone)
+    base_resolution = 900.0
+    hud_scale = min(screen_width, screen_height) / base_resolution
+    
+    # Limita lo scale per evitare scaling estremo
+    hud_scale = max(0.5, min(1.5, hud_scale))
+    
     center_x, center_y = screen_width / 2, screen_height / 2
     margin = min(screen_width, screen_height) / 5
     available = min(screen_width, screen_height) - margin * 2
@@ -486,7 +500,7 @@ def roll_dice():
     current_phase = next_phase(current_phase)
     dice_display.notify_hide()
 
-    size = min(center_radius * 1.35, 100)
+    size = center_radius * 1.15
     angle = math.radians(random.uniform(0, 360))
     dist = math.hypot(screen_width, screen_height) / 2 + size
 
@@ -562,6 +576,7 @@ def main():
         player_names.set_names(_names_from_config)
 
     pygame.init()
+    ctypes.windll.user32.SetProcessDPIAware()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Non t'Arrabbiare")
     try:
@@ -642,7 +657,7 @@ def main():
                         ctypes.windll.user32.SetProcessDPIAware()
                         width = ctypes.windll.user32.GetSystemMetrics(0)
                         height = ctypes.windll.user32.GetSystemMetrics(1)
-                        screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+                        screen = pygame.display.set_mode((width - windowed_margin_width, height - windowed_margin_height), pygame.RESIZABLE)
                     screen_width, screen_height = screen.get_size()
                     calculate_dimensions()
                     adjust_board()
@@ -660,6 +675,7 @@ def main():
             elif action == ACTION_RESET:
                 reset_game()
             elif action == ACTION_QUIT:
+                time.sleep(0.25) # piccola pausa per far sentire il suono di click del bottone prima di chiudere
                 running = False
 
         # ============================================================
