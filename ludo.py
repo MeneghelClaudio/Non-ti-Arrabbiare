@@ -584,7 +584,7 @@ def main():
             pygame.display.set_icon(icon)
         except Exception:
             pass
-    ctypes.windll.user32.SetProcessDPIAware()
+    #ctypes.windll.user32.SetProcessDPIAware()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Non t'Arrabbiare")
     try:
@@ -663,7 +663,7 @@ def main():
                     # Modalità windowed
                     else:
                         os.environ['SDL_VIDEO_CENTERED'] = '1' # centra la finestra nello schermo
-                        ctypes.windll.user32.SetProcessDPIAware()
+                        #ctypes.windll.user32.SetProcessDPIAware()
                         width = ctypes.windll.user32.GetSystemMetrics(0)
                         height = ctypes.windll.user32.GetSystemMetrics(1)
                         screen = pygame.display.set_mode((width - windowed_margin_width, height - windowed_margin_height), pygame.RESIZABLE)
